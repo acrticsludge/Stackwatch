@@ -44,7 +44,7 @@ interface SettingsContentProps {
 const DEFAULT_METRICS: Record<string, string[]> = {
   github: ["actions_minutes"],
   vercel: ["bandwidth_gb", "build_minutes", "function_invocations"],
-  supabase: ["db_size_mb", "row_count", "storage_mb", "monthly_active_users"],
+  supabase: ["db_size_mb", "storage_mb", "monthly_active_users"],
 };
 
 export function SettingsContent({

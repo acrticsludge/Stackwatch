@@ -24,6 +24,20 @@ export default async function SettingsPage() {
     supabase.from("subscriptions").select("tier").eq("status", "active").maybeSingle(),
   ]);
 
+  // Auto-provision email channel for users who signed up before this was added
+  const userObj = user?.user;
+  if (userObj) {
+    const hasEmail = (alertChannels ?? []).some((c) => c.type === "email");
+    if (!hasEmail) {
+      await supabase.from("alert_channels").insert({
+        user_id: userObj.id,
+        type: "email",
+        config: { email: userObj.email },
+        enabled: true,
+      });
+    }
+  }
+
   return (
     <div>
       <div className="mb-8">

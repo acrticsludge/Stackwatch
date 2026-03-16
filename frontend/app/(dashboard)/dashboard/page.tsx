@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { UsageCard } from "@/components/dashboard/UsageCard";
+import { GroupedUsageCard } from "@/components/dashboard/GroupedUsageCard";
 import { DashboardRefresher } from "./DashboardRefresher";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -110,7 +110,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Cards grid */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
         {integrations.map((integration) => {
           const integrationSnapshots = Array.from(latestMap.entries())
             .filter(([key]) => key.startsWith(`${integration.id}::`))
@@ -163,19 +163,16 @@ export default async function DashboardPage() {
             );
           }
 
-          return integrationSnapshots.map((snap) => (
-            <UsageCard
-              key={`${integration.id}-${snap.metric_name}`}
+          return (
+            <GroupedUsageCard
+              key={integration.id}
               service={integration.service}
               accountLabel={integration.account_label}
-              metricName={snap.metric_name}
-              currentValue={snap.current_value}
-              limitValue={snap.limit_value}
-              percentUsed={snap.percent_used}
+              snapshots={integrationSnapshots}
               lastSyncedAt={integration.last_synced_at}
               status={integration.status}
             />
-          ));
+          );
         })}
       </div>
     </div>
