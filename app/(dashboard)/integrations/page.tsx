@@ -5,7 +5,7 @@ import { IntegrationsContent } from "./IntegrationsContent";
 export const metadata: Metadata = { title: "Integrations" };
 
 export default async function IntegrationsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: integrations } = await supabase
     .from("integrations")

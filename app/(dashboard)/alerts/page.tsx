@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 export const metadata: Metadata = { title: "Alert History" };
 
 export default async function AlertsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: historyRaw } = await supabase
     .from("alert_history")

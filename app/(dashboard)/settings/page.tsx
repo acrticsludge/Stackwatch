@@ -5,7 +5,7 @@ import { SettingsContent } from "./SettingsContent";
 export const metadata: Metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const [
     { data: user },
