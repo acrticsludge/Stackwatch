@@ -25,9 +25,10 @@ export default async function SettingsPage() {
   ]);
 
   // Auto-provision email channel for users who signed up before this was added
+  let finalAlertChannels = alertChannels ?? [];
   const userObj = user?.user;
   if (userObj) {
-    const hasEmail = (alertChannels ?? []).some((c) => c.type === "email");
+    const hasEmail = finalAlertChannels.some((c) => c.type === "email");
     if (!hasEmail) {
       await supabase.from("alert_channels").insert({
         user_id: userObj.id,
@@ -35,6 +36,10 @@ export default async function SettingsPage() {
         config: { email: userObj.email },
         enabled: true,
       });
+      const { data: refreshed } = await supabase
+        .from("alert_channels")
+        .select("id, type, config, enabled");
+      finalAlertChannels = refreshed ?? finalAlertChannels;
     }
   }
 
@@ -48,7 +53,7 @@ export default async function SettingsPage() {
         userEmail={user.user?.email ?? ""}
         integrations={integrations ?? []}
         alertConfigs={alertConfigs ?? []}
-        alertChannels={alertChannels ?? []}
+        alertChannels={finalAlertChannels}
         tier={subscription?.tier ?? "free"}
       />
     </div>
