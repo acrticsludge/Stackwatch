@@ -65,57 +65,56 @@ export async function fetchSupabaseUsage(
     throw new Error(`Supabase usage API error: ${res.status}`);
   }
 
+  // The Supabase Management API returns { usages: [{ metric, usage, available_in_period, capped }] }
   const data = await res.json() as {
-    db_size?: number;
-    num_rows?: number;
-    storage_size?: number;
-    monthly_active_users?: number;
+    usages?: Array<{ metric: string; usage: number; available_in_period: number | null }>;
   };
+
+  const usageMap = new Map<string, { usage: number; available: number | null }>();
+  for (const entry of data.usages ?? []) {
+    usageMap.set(entry.metric, { usage: entry.usage ?? 0, available: entry.available_in_period ?? null });
+  }
 
   const metrics: UsageMetric[] = [];
 
-  if (data.db_size !== undefined) {
-    const mb = Math.round(data.db_size / (1024 * 1024) * 100) / 100;
+  const dbSize = usageMap.get("db_size");
+  if (dbSize !== undefined) {
+    const mb = Math.round(dbSize.usage / (1024 * 1024) * 100) / 100;
+    const limitMb = dbSize.available != null ? Math.round(dbSize.available / (1024 * 1024)) : FREE_TIER_LIMITS.db_size_mb;
     metrics.push({
       metricName: "db_size_mb",
       currentValue: mb,
-      limitValue: FREE_TIER_LIMITS.db_size_mb,
-      percentUsed: Math.round((mb / FREE_TIER_LIMITS.db_size_mb) * 10000) / 100,
+      limitValue: limitMb,
+      percentUsed: Math.round((mb / limitMb) * 10000) / 100,
     });
   }
 
-  if (data.num_rows !== undefined) {
-    metrics.push({
-      metricName: "row_count",
-      currentValue: data.num_rows,
-      limitValue: FREE_TIER_LIMITS.row_count,
-      percentUsed:
-        Math.round((data.num_rows / FREE_TIER_LIMITS.row_count) * 10000) / 100,
-    });
-  }
-
-  if (data.storage_size !== undefined) {
-    const mb = Math.round(data.storage_size / (1024 * 1024) * 100) / 100;
+  const storage = usageMap.get("storage_size");
+  if (storage !== undefined) {
+    const mb = Math.round(storage.usage / (1024 * 1024) * 100) / 100;
+    const limitMb = storage.available != null ? Math.round(storage.available / (1024 * 1024)) : FREE_TIER_LIMITS.storage_mb;
     metrics.push({
       metricName: "storage_mb",
       currentValue: mb,
-      limitValue: FREE_TIER_LIMITS.storage_mb,
-      percentUsed:
-        Math.round((mb / FREE_TIER_LIMITS.storage_mb) * 10000) / 100,
+      limitValue: limitMb,
+      percentUsed: Math.round((mb / limitMb) * 10000) / 100,
     });
   }
 
-  if (data.monthly_active_users !== undefined) {
+  const mau = usageMap.get("monthly_active_users");
+  if (mau !== undefined) {
+    const limit = mau.available ?? FREE_TIER_LIMITS.monthly_active_users;
     metrics.push({
       metricName: "monthly_active_users",
-      currentValue: data.monthly_active_users,
-      limitValue: FREE_TIER_LIMITS.monthly_active_users,
-      percentUsed:
-        Math.round(
-          (data.monthly_active_users / FREE_TIER_LIMITS.monthly_active_users) *
-            10000
-        ) / 100,
+      currentValue: mau.usage,
+      limitValue: limit,
+      percentUsed: Math.round((mau.usage / limit) * 10000) / 100,
     });
+  }
+
+  // If the API returned usages but none matched our known metrics, log for debugging
+  if (data.usages && data.usages.length > 0 && metrics.length === 0) {
+    console.warn(`[supabase] Unrecognised usage metrics for project '${projectRef}':`, data.usages.map((u) => u.metric));
   }
 
   return metrics;

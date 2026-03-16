@@ -14,7 +14,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, Trash2, AlertCircle } from "lucide-react";
+import { Plus, Trash2, AlertCircle, Pencil } from "lucide-react";
 
 interface Integration {
   id: string;
@@ -23,6 +23,7 @@ interface Integration {
   status: string;
   created_at: string;
   last_synced_at: string | null;
+  meta?: { project_ref?: string } | null;
 }
 
 interface IntegrationsContentProps {
@@ -71,11 +72,44 @@ export function IntegrationsContent({ integrations }: IntegrationsContentProps) 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingIntegration, setEditingIntegration] = useState<Integration | null>(null);
 
   function openConnect(serviceId: string) {
     setFormData({});
     setError("");
     setOpenDialog(serviceId);
+  }
+
+  function openEdit(intg: Integration) {
+    setFormData({
+      account_label: intg.account_label,
+      ...(intg.meta?.project_ref ? { "meta.project_ref": intg.meta.project_ref } : {}),
+    });
+    setError("");
+    setEditingIntegration(intg);
+  }
+
+  async function handleEdit() {
+    if (!editingIntegration) return;
+    setError("");
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/integrations/${editingIntegration.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Failed to update");
+        return;
+      }
+      setEditingIntegration(null);
+      toast({ title: "Saved", description: "Integration updated." });
+      router.refresh();
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function handleConnect(serviceId: string) {
@@ -186,6 +220,14 @@ export function IntegrationsContent({ integrations }: IntegrationsContentProps) 
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-8 w-8 text-zinc-600 hover:text-zinc-200 hover:bg-white/6"
+                        onClick={() => openEdit(intg)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8 text-zinc-600 hover:text-red-400 hover:bg-red-500/10"
                         onClick={() => handleDelete(intg.id)}
                         disabled={deletingId === intg.id}
@@ -200,6 +242,66 @@ export function IntegrationsContent({ integrations }: IntegrationsContentProps) 
           </div>
         );
       })}
+
+      {/* Edit dialog */}
+      {(() => {
+        const svc = editingIntegration
+          ? SERVICES.find((s) => s.id === editingIntegration.service)
+          : null;
+        return (
+          <Dialog
+            open={!!editingIntegration}
+            onOpenChange={(o) => { if (!o) setEditingIntegration(null); }}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit {svc?.name ?? "Integration"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                {svc?.fields.map((field) => (
+                  <div key={field.key} className="space-y-1.5">
+                    <Label className="text-zinc-400 text-xs">{field.label}</Label>
+                    <Input
+                      type={field.type}
+                      placeholder={
+                        field.type === "password"
+                          ? "Leave blank to keep existing"
+                          : field.placeholder
+                      }
+                      value={formData[field.key] ?? ""}
+                      onChange={(e) =>
+                        setFormData((p) => ({ ...p, [field.key]: e.target.value }))
+                      }
+                      autoComplete="off"
+                    />
+                  </div>
+                ))}
+                {svc?.helpText && (
+                  <p className="text-xs text-zinc-600">{svc.helpText}</p>
+                )}
+                {error && (
+                  <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-md px-3 py-2">
+                    {error}
+                  </p>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setEditingIntegration(null)}
+                  disabled={submitting}
+                  className="border-white/10 text-zinc-300 hover:bg-white/6"
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleEdit} disabled={submitting}>
+                  {submitting ? "Saving..." : "Save changes"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
 
       {SERVICES.map((svc) => (
         <Dialog

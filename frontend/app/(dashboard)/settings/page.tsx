@@ -24,10 +24,10 @@ export default async function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-white mb-1 tracking-tight">Settings</h1>
-      <p className="text-zinc-600 text-sm mb-8">
-        Configure alert thresholds and notification channels.
-      </p>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white tracking-tight">Settings</h1>
+        <p className="text-zinc-500 text-sm mt-1">Configure alert thresholds and notification channels.</p>
+      </div>
       <SettingsContent
         userEmail={user.user?.email ?? ""}
         integrations={integrations ?? []}

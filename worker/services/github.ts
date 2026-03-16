@@ -49,8 +49,9 @@ export async function fetchGitHubUsage(
       { headers }
     );
     if (res.status === 404) {
-      console.warn(`[github] Billing API unavailable for org '${org}' (integration ${integration.id}) — endpoint returned 404. This org may not have Actions billing data or the API is unavailable for this plan.`);
-      return [];
+      console.warn(`[github] Billing API unavailable for org '${org}' (integration ${integration.id}) — no Actions billing data for this plan.`);
+      // Return 0-usage metric so the card still renders on the dashboard
+      return [{ metricName: "actions_minutes", currentValue: 0, limitValue: 2000, percentUsed: 0 }];
     }
     if (!res.ok) handleGitHubError(res.status, `org: ${org}`);
     const data = await res.json() as {
@@ -65,8 +66,8 @@ export async function fetchGitHubUsage(
       { headers }
     );
     if (res.status === 404) {
-      console.warn(`[github] Billing API unavailable for user account (integration ${integration.id}) — endpoint returned 404. This account may not have Actions billing data or the API is unavailable for this plan.`);
-      return [];
+      console.warn(`[github] Billing API unavailable for user account (integration ${integration.id}) — no Actions billing data for this plan.`);
+      return [{ metricName: "actions_minutes", currentValue: 0, limitValue: 2000, percentUsed: 0 }];
     }
     if (!res.ok) handleGitHubError(res.status, "user billing");
     const data = await res.json() as {

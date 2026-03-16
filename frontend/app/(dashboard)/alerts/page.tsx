@@ -31,12 +31,20 @@ export default async function AlertsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-white mb-1 tracking-tight">Alert History</h1>
-      <p className="text-zinc-600 text-sm mb-8">A log of all alerts that have been sent.</p>
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Alert History</h1>
+          <p className="text-zinc-500 text-sm mt-1">
+            {history.length > 0
+              ? `${history.length} alert${history.length !== 1 ? "s" : ""} recorded`
+              : "A log of all alerts that have been sent"}
+          </p>
+        </div>
+      </div>
 
       {!history || history.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="h-14 w-14 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
+          <div className="h-14 w-14 rounded-xl bg-white/4 border border-white/6 flex items-center justify-center mb-4">
             <svg className="h-7 w-7 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
@@ -47,10 +55,10 @@ export default async function AlertsPage() {
           </p>
         </div>
       ) : (
-        <div className="bg-[#111] border border-white/[0.06] rounded-xl overflow-hidden">
+        <div className="bg-[#111] border border-white/6 rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/[0.06] bg-white/[0.02]">
+              <tr className="border-b border-white/6 bg-white/2">
                 <th className="text-left px-5 py-3 text-xs font-medium text-zinc-600 uppercase tracking-wide">Service</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-zinc-600 uppercase tracking-wide">Metric</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-zinc-600 uppercase tracking-wide">Usage</th>
@@ -58,12 +66,12 @@ export default async function AlertsPage() {
                 <th className="text-left px-5 py-3 text-xs font-medium text-zinc-600 uppercase tracking-wide">When</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.04]">
+            <tbody className="divide-y divide-white/4">
               {history.map((row) => {
                 const intg = row.integration;
                 const pct = Math.round(row.percent_used);
                 return (
-                  <tr key={row.id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={row.id} className="hover:bg-white/2 transition-colors">
                     <td className="px-5 py-3">
                       <p className="font-medium text-zinc-200">
                         {intg ? SERVICE_LABELS[intg.service] ?? intg.service : "—"}

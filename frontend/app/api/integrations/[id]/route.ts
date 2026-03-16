@@ -8,6 +8,7 @@ const UpdateSchema = z.object({
   account_label: z.string().min(1).max(80).optional(),
   api_key: z.string().min(1).optional(),
   status: z.enum(["connected", "error", "disconnected"]).optional(),
+  "meta.project_ref": z.string().min(1).optional(),
 });
 
 export async function PATCH(
@@ -41,6 +42,9 @@ export async function PATCH(
   if (parsed.data.api_key) {
     updates.api_key = encrypt(parsed.data.api_key);
     // NEVER log the raw api_key
+  }
+  if (parsed.data["meta.project_ref"]) {
+    updates.meta = { project_ref: parsed.data["meta.project_ref"] };
   }
 
   const serviceClient = createServiceClient();
