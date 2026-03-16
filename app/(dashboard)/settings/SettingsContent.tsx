@@ -1,0 +1,354 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { useToast } from "@/components/ui/use-toast";
+import { createClient } from "@/lib/supabase/browser";
+import { METRIC_LABELS, SERVICE_LABELS } from "@/lib/utils";
+
+interface AlertConfig {
+  id: string;
+  integration_id: string;
+  metric_name: string;
+  threshold_percent: number;
+  enabled: boolean;
+}
+
+interface AlertChannel {
+  id: string;
+  type: string;
+  config: unknown;
+  enabled: boolean;
+}
+
+interface Integration {
+  id: string;
+  service: string;
+  account_label: string;
+}
+
+interface SettingsContentProps {
+  userEmail: string;
+  integrations: Integration[];
+  alertConfigs: AlertConfig[];
+  alertChannels: AlertChannel[];
+}
+
+const DEFAULT_METRICS: Record<string, string[]> = {
+  github: ["actions_minutes"],
+  vercel: ["bandwidth_gb", "build_minutes", "function_invocations"],
+  supabase: ["db_size_mb", "row_count", "storage_mb", "monthly_active_users"],
+};
+
+export function SettingsContent({
+  userEmail,
+  integrations,
+  alertConfigs,
+  alertChannels,
+}: SettingsContentProps) {
+  const router = useRouter();
+  const { toast } = useToast();
+
+  // Alert thresholds state
+  const [thresholds, setThresholds] = useState<Record<string, { threshold: number; enabled: boolean }>>(() => {
+    const map: Record<string, { threshold: number; enabled: boolean }> = {};
+    for (const cfg of alertConfigs) {
+      map[`${cfg.integration_id}::${cfg.metric_name}`] = {
+        threshold: cfg.threshold_percent,
+        enabled: cfg.enabled,
+      };
+    }
+    return map;
+  });
+
+  // Email channel
+  const emailChannel = alertChannels.find((c) => c.type === "email");
+  const [emailEnabled, setEmailEnabled] = useState(emailChannel?.enabled ?? false);
+  const [emailSaving, setEmailSaving] = useState(false);
+
+  // Slack webhook
+  const slackChannel = alertChannels.find((c) => c.type === "slack");
+  const [slackUrl, setSlackUrl] = useState((slackChannel?.config as { webhook_url?: string } | null)?.webhook_url ?? "");
+  const [slackEnabled, setSlackEnabled] = useState(slackChannel?.enabled ?? false);
+
+  // Discord webhook
+  const discordChannel = alertChannels.find((c) => c.type === "discord");
+  const [discordUrl, setDiscordUrl] = useState((discordChannel?.config as { webhook_url?: string } | null)?.webhook_url ?? "");
+  const [discordEnabled, setDiscordEnabled] = useState(discordChannel?.enabled ?? false);
+
+  // Account
+  const [newPassword, setNewPassword] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+
+  const supabase = createClient();
+
+  async function saveThreshold(integrationId: string, metricName: string) {
+    const key = `${integrationId}::${metricName}`;
+    const val = thresholds[key] ?? { threshold: 80, enabled: true };
+    const res = await fetch("/api/alerts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        integration_id: integrationId,
+        metric_name: metricName,
+        threshold_percent: val.threshold,
+        enabled: val.enabled,
+      }),
+    });
+    if (!res.ok) {
+      toast({ title: "Failed to save threshold", variant: "destructive" });
+    } else {
+      toast({ title: "Threshold saved" });
+    }
+  }
+
+  async function saveEmailChannel() {
+    setEmailSaving(true);
+    const method = emailChannel ? "PATCH" : "POST";
+    const url = emailChannel ? `/api/alerts/channels?id=${emailChannel.id}` : "/api/alerts/channels";
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "email", config: { email: userEmail }, enabled: emailEnabled }),
+    });
+    setEmailSaving(false);
+    if (!res.ok) {
+      toast({ title: "Failed to save email settings", variant: "destructive" });
+    } else {
+      toast({ title: "Email notifications updated" });
+      router.refresh();
+    }
+  }
+
+  async function saveWebhookChannel(type: "slack" | "discord", webhookUrl: string, enabled: boolean) {
+    const existing = alertChannels.find((c) => c.type === type);
+    const method = existing ? "PATCH" : "POST";
+    const url = existing ? `/api/alerts/channels?id=${existing.id}` : "/api/alerts/channels";
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, config: { webhook_url: webhookUrl }, enabled }),
+    });
+    if (!res.ok) {
+      toast({ title: `Failed to save ${type} settings`, variant: "destructive" });
+    } else {
+      toast({ title: `${type} notifications updated` });
+      router.refresh();
+    }
+  }
+
+  async function handlePasswordChange(e: React.FormEvent) {
+    e.preventDefault();
+    if (newPassword.length < 8) {
+      toast({ title: "Password must be at least 8 characters", variant: "destructive" });
+      return;
+    }
+    setPwSaving(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setPwSaving(false);
+    if (error) {
+      toast({ title: error.message, variant: "destructive" });
+    } else {
+      setNewPassword("");
+      toast({ title: "Password updated" });
+    }
+  }
+
+  return (
+    <Tabs defaultValue="alerts">
+      <TabsList className="mb-6">
+        <TabsTrigger value="alerts">Alert Thresholds</TabsTrigger>
+        <TabsTrigger value="notifications">Notifications</TabsTrigger>
+        <TabsTrigger value="account">Account</TabsTrigger>
+      </TabsList>
+
+      {/* ── Alert Thresholds ── */}
+      <TabsContent value="alerts">
+        {integrations.length === 0 ? (
+          <p className="text-slate-500 text-sm">
+            Connect at least one service first.
+          </p>
+        ) : (
+          <div className="space-y-6">
+            {integrations.map((intg) => {
+              const metrics = DEFAULT_METRICS[intg.service] ?? [];
+              return (
+                <div key={intg.id} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                  <h3 className="font-semibold text-slate-900 mb-4">
+                    {SERVICE_LABELS[intg.service]} — {intg.account_label}
+                  </h3>
+                  <div className="space-y-5">
+                    {metrics.map((metric) => {
+                      const key = `${intg.id}::${metric}`;
+                      const val = thresholds[key] ?? { threshold: 80, enabled: true };
+                      return (
+                        <div key={metric} className="flex items-center gap-4">
+                          <Switch
+                            checked={val.enabled}
+                            onCheckedChange={(checked) =>
+                              setThresholds((p) => ({
+                                ...p,
+                                [key]: { ...val, enabled: checked },
+                              }))
+                            }
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <Label className="text-sm">
+                                {METRIC_LABELS[metric] ?? metric}
+                              </Label>
+                              <span className="text-sm font-medium text-slate-700">
+                                {val.threshold}%
+                              </span>
+                            </div>
+                            <Slider
+                              min={10}
+                              max={100}
+                              step={5}
+                              value={[val.threshold]}
+                              onValueChange={([v]) =>
+                                setThresholds((p) => ({
+                                  ...p,
+                                  [key]: { ...val, threshold: v },
+                                }))
+                              }
+                              disabled={!val.enabled}
+                            />
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => saveThreshold(intg.id, metric)}
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </TabsContent>
+
+      {/* ── Notifications ── */}
+      <TabsContent value="notifications">
+        <div className="space-y-5">
+          {/* Email */}
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="font-semibold text-slate-900">Email</h3>
+                <p className="text-sm text-slate-500">{userEmail}</p>
+              </div>
+              <Switch
+                checked={emailEnabled}
+                onCheckedChange={setEmailEnabled}
+              />
+            </div>
+            <Button
+              size="sm"
+              onClick={saveEmailChannel}
+              disabled={emailSaving}
+            >
+              {emailSaving ? "Saving..." : "Save"}
+            </Button>
+          </div>
+
+          {/* Slack */}
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="font-semibold text-slate-900">Slack</h3>
+                <p className="text-sm text-slate-500">Incoming webhook URL</p>
+              </div>
+              <Switch
+                checked={slackEnabled}
+                onCheckedChange={setSlackEnabled}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Input
+                type="url"
+                placeholder="https://hooks.slack.com/services/..."
+                value={slackUrl}
+                onChange={(e) => setSlackUrl(e.target.value)}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => saveWebhookChannel("slack", slackUrl, slackEnabled)}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+
+          {/* Discord */}
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="font-semibold text-slate-900">Discord</h3>
+                <p className="text-sm text-slate-500">Incoming webhook URL</p>
+              </div>
+              <Switch
+                checked={discordEnabled}
+                onCheckedChange={setDiscordEnabled}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Input
+                type="url"
+                placeholder="https://discord.com/api/webhooks/..."
+                value={discordUrl}
+                onChange={(e) => setDiscordUrl(e.target.value)}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => saveWebhookChannel("discord", discordUrl, discordEnabled)}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        </div>
+      </TabsContent>
+
+      {/* ── Account ── */}
+      <TabsContent value="account">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm max-w-lg">
+          <h3 className="font-semibold text-slate-900 mb-4">Change password</h3>
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            <div className="space-y-1">
+              <Label>Email</Label>
+              <Input value={userEmail} disabled />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="new-password">New password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                placeholder="Min 8 characters"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </div>
+            <Button type="submit" disabled={pwSaving}>
+              {pwSaving ? "Saving..." : "Update password"}
+            </Button>
+          </form>
+        </div>
+      </TabsContent>
+    </Tabs>
+  );
+}
