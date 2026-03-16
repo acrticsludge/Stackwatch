@@ -28,7 +28,7 @@ export async function fetchSupabaseUsage(
     ?.project_ref;
 
   if (!projectRef) {
-    throw new Error("Supabase integration missing project_ref in meta");
+    throw new Error("Supabase integration missing project_ref in meta.");
   }
 
   const res = await fetch(
@@ -40,6 +40,26 @@ export async function fetchSupabaseUsage(
       },
     }
   );
+
+  switch (res.status) {
+    case 401:
+      throw new Error(
+        "Supabase: Invalid or expired Management API token. " +
+        "This must be a Personal Access Token from supabase.com/dashboard/account/tokens, " +
+        "not the project anon or service_role key."
+      );
+    case 403:
+      throw new Error(
+        "Supabase: Token lacks permission to read project usage. " +
+        "Ensure the Personal Access Token has the required scopes."
+      );
+    case 404:
+      throw new Error(
+        `Supabase: Project '${projectRef}' not found. Check the project_ref in the integration settings.`
+      );
+    case 429:
+      throw new Error("Supabase: Rate limited. Will retry next cycle.");
+  }
 
   if (!res.ok) {
     throw new Error(`Supabase usage API error: ${res.status}`);

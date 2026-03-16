@@ -30,9 +30,14 @@ export default async function LandingPage() {
         <ProblemSection />
         <HowItWorks />
         <ServicesSection />
-        <section className="py-20 bg-[#0a0a0a] border-t border-white/[0.04]">
+
+        {/* Demo section */}
+        <section className="py-24 bg-[#0a0a0a] border-t border-white/4">
           <div className="max-w-5xl mx-auto px-6">
             <div className="text-center mb-12">
+              <p className="text-xs font-mono text-zinc-600 uppercase tracking-widest mb-3">
+                Live preview
+              </p>
               <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">
                 See it in action
               </h2>
@@ -43,6 +48,7 @@ export default async function LandingPage() {
             <DemoWidget />
           </div>
         </section>
+
         <AlertChannelsSection />
         <PricingSection />
       </main>

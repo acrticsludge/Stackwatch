@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface DemoMetric {
   service: string;
@@ -70,15 +71,15 @@ export function DemoWidget() {
   const metrics = SCENARIOS[scenario];
 
   return (
-    <div className="bg-[#111] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden max-w-3xl mx-auto">
+    <div className="bg-[#111] border border-white/8 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden max-w-3xl mx-auto">
       {/* Browser chrome */}
-      <div className="bg-[#0d0d0d] border-b border-white/[0.06] px-4 py-3 flex items-center gap-3">
+      <div className="bg-[#0d0d0d] border-b border-white/6 px-4 py-3 flex items-center gap-3">
         <div className="flex gap-1.5">
           <div className="h-3 w-3 rounded-full bg-[#ff5f57]" />
           <div className="h-3 w-3 rounded-full bg-[#febc2e]" />
           <div className="h-3 w-3 rounded-full bg-[#28c840]" />
         </div>
-        <div className="flex-1 bg-[#1a1a1a] rounded border border-white/[0.06] px-3 py-1 text-xs text-zinc-500 max-w-xs mx-auto text-center font-mono">
+        <div className="flex-1 bg-[#1a1a1a] rounded border border-white/6 px-3 py-1 text-xs text-zinc-500 max-w-xs mx-auto text-center font-mono">
           stackwatch.app/dashboard
         </div>
       </div>
@@ -98,7 +99,7 @@ export function DemoWidget() {
                 className={`text-xs px-2.5 py-1 rounded border transition-colors ${
                   i === scenario
                     ? "border-blue-500/40 bg-blue-500/10 text-blue-400"
-                    : "border-white/[0.06] text-zinc-600 hover:text-zinc-400 hover:border-white/10"
+                    : "border-white/6 text-zinc-600 hover:text-zinc-400 hover:border-white/10"
                 }`}
               >
                 {label}
@@ -108,43 +109,51 @@ export function DemoWidget() {
         </div>
 
         <div className="grid sm:grid-cols-3 gap-3">
-          {metrics.map((m) => {
-            const pct = Math.round((m.current / m.limit) * 100);
-            return (
-              <div
-                key={m.service}
-                className="bg-[#0d0d0d] border border-white/[0.06] rounded-lg p-4"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded bg-white/[0.05] flex items-center justify-center flex-shrink-0">
-                      {SERVICE_ICONS[m.service]}
+          <AnimatePresence mode="wait">
+            {metrics.map((m) => {
+              const pct = Math.round((m.current / m.limit) * 100);
+              return (
+                <motion.div
+                  key={`${scenario}-${m.service}`}
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.97 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  className="bg-[#0d0d0d] border border-white/6 rounded-lg p-4"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-6 rounded bg-white/5 flex items-center justify-center shrink-0">
+                        {SERVICE_ICONS[m.service]}
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-zinc-200 leading-tight">{m.service}</p>
+                        <p className="text-[10px] text-zinc-600">{m.label}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-zinc-200 leading-tight">{m.service}</p>
-                      <p className="text-[10px] text-zinc-600">{m.label}</p>
-                    </div>
+                    <span className={`inline-flex h-1.5 w-1.5 rounded-full shrink-0 ${getDotColor(pct)}`} />
                   </div>
-                  <span className={`inline-flex h-1.5 w-1.5 rounded-full flex-shrink-0 ${getDotColor(pct)}`} />
-                </div>
-                <p className="text-[11px] text-zinc-600 mb-2">{m.metric}</p>
-                <div className="h-1.5 w-full rounded-full bg-white/[0.06] mb-2 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${getBarColor(pct)}`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-zinc-600">
-                    {m.current.toLocaleString()} / {m.limit.toLocaleString()} {m.unit}
-                  </span>
-                  <span className={`text-[11px] font-semibold ${getPctColor(pct)}`}>
-                    {pct}%
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+                  <p className="text-[11px] text-zinc-600 mb-2">{m.metric}</p>
+                  <div className="h-1.5 w-full rounded-full bg-white/6 mb-2 overflow-hidden">
+                    <motion.div
+                      className={`h-full rounded-full ${getBarColor(pct)}`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-zinc-600">
+                      {m.current.toLocaleString()} / {m.limit.toLocaleString()} {m.unit}
+                    </span>
+                    <span className={`text-[11px] font-semibold ${getPctColor(pct)}`}>
+                      {pct}%
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
 
         <p className="text-center text-xs text-zinc-700 mt-4">

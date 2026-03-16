@@ -10,6 +10,22 @@ interface Integration {
   meta: Record<string, unknown> | null;
 }
 
+function handleGitHubError(status: number, context: string): never {
+  switch (status) {
+    case 401:
+      throw new Error(`GitHub: Invalid or expired Personal Access Token (${context})`);
+    case 403:
+      throw new Error(
+        `GitHub: Token lacks required permissions (${context}). ` +
+        `Org billing requires the 'read:org' scope; user billing requires 'read:user'.`
+      );
+    case 429:
+      throw new Error(`GitHub: Rate limited (${context}). Will retry next cycle.`);
+    default:
+      throw new Error(`GitHub billing API error: ${status} (${context})`);
+  }
+}
+
 export async function fetchGitHubUsage(
   integration: Integration
 ): Promise<UsageMetric[]> {
@@ -32,7 +48,11 @@ export async function fetchGitHubUsage(
       `https://api.github.com/orgs/${org}/settings/billing/actions`,
       { headers }
     );
-    if (!res.ok) throw new Error(`GitHub org billing API error: ${res.status}`);
+    if (res.status === 404) {
+      console.warn(`[github] Billing API unavailable for org '${org}' (integration ${integration.id}) — endpoint returned 404. This org may not have Actions billing data or the API is unavailable for this plan.`);
+      return [];
+    }
+    if (!res.ok) handleGitHubError(res.status, `org: ${org}`);
     const data = await res.json() as {
       total_minutes_used: number;
       included_minutes: number;
@@ -40,12 +60,15 @@ export async function fetchGitHubUsage(
     minutesUsed = data.total_minutes_used ?? 0;
     minutesLimit = data.included_minutes ?? 2000;
   } else {
-    // User-level billing
     const res = await fetch(
       "https://api.github.com/user/settings/billing/actions",
       { headers }
     );
-    if (!res.ok) throw new Error(`GitHub billing API error: ${res.status}`);
+    if (res.status === 404) {
+      console.warn(`[github] Billing API unavailable for user account (integration ${integration.id}) — endpoint returned 404. This account may not have Actions billing data or the API is unavailable for this plan.`);
+      return [];
+    }
+    if (!res.ok) handleGitHubError(res.status, "user billing");
     const data = await res.json() as {
       total_minutes_used: number;
       included_minutes: number;

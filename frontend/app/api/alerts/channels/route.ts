@@ -5,13 +5,13 @@ import { checkAlertChannelLimit, TierLimitError } from "@/lib/tiers";
 
 const CreateSchema = z.object({
   type: z.enum(["email", "slack", "discord", "push"]),
-  config: z.record(z.unknown()),
+  config: z.record(z.string(), z.unknown()),
   enabled: z.boolean().default(true),
 });
 
 const UpdateSchema = z.object({
   enabled: z.boolean().optional(),
-  config: z.record(z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
 });
 
 export async function GET() {

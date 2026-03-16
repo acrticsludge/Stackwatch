@@ -1,4 +1,7 @@
-import { Button } from "@/components/ui/button";
+"use client";
+
+import { useRef } from "react";
+import { motion, useInView } from "framer-motion";
 
 const plans = [
   {
@@ -54,27 +57,54 @@ const plans = [
 ];
 
 export function PricingSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-80px" });
+
   return (
-    <section id="pricing" className="py-24 bg-[#0a0a0a] border-t border-white/[0.04]">
+    <section id="pricing" className="py-24 bg-[#0a0a0a] border-t border-white/4" ref={ref}>
       <div className="max-w-5xl mx-auto px-6">
-        <div className="text-center mb-14">
+        <motion.div
+          className="text-center mb-14"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          <p className="text-xs font-mono text-zinc-600 uppercase tracking-widest mb-3">
+            Pricing
+          </p>
           <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">
             Simple, transparent pricing
           </h2>
           <p className="text-zinc-500 text-base">
             Start free. Upgrade when you need more.
           </p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-4 items-start">
+        </motion.div>
+
+        <motion.div
+          className="grid md:grid-cols-3 gap-4 items-start"
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          variants={{ visible: { transition: { staggerChildren: 0.1, delayChildren: 0.1 } } }}
+        >
           {plans.map((p) => (
-            <div
+            <motion.div
               key={p.name}
-              className={`rounded-xl p-6 ${
+              variants={{ hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0 } }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className={`relative rounded-xl p-6 transition-all duration-300 hover:-translate-y-1 ${
                 p.highlight
-                  ? "bg-blue-600/[0.08] border border-blue-500/25"
-                  : "bg-[#111] border border-white/[0.06]"
+                  ? "bg-[#0d1628] border border-blue-500/30 shadow-xl shadow-blue-500/10"
+                  : "bg-[#111] border border-white/6 hover:border-white/10"
               }`}
             >
+              {p.highlight && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center text-[10px] font-semibold text-blue-300 bg-blue-500/20 border border-blue-500/30 rounded-full px-2.5 py-0.5 uppercase tracking-wider">
+                    Most popular
+                  </span>
+                </div>
+              )}
+
               <div className="mb-5">
                 <p
                   className={`text-xs font-medium mb-2 uppercase tracking-widest ${
@@ -97,47 +127,40 @@ export function PricingSection() {
                   {p.description}
                 </p>
               </div>
+
               <ul className="space-y-2.5 mb-6">
                 {p.features.map((f) => (
                   <li key={f} className="flex items-start gap-2">
                     <svg
-                      className={`h-3.5 w-3.5 mt-0.5 flex-shrink-0 ${
+                      className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${
                         p.highlight ? "text-blue-400" : "text-zinc-600"
                       }`}
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2.5}
-                        d="M5 13l4 4L19 7"
-                      />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span
-                      className={`text-sm ${
-                        p.highlight ? "text-zinc-300" : "text-zinc-500"
-                      }`}
-                    >
+                    <span className={`text-sm ${p.highlight ? "text-zinc-300" : "text-zinc-500"}`}>
                       {f}
                     </span>
                   </li>
                 ))}
               </ul>
+
               <a
                 href={p.href}
-                className={`flex w-full items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                className={`flex w-full items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium transition-all ${
                   p.highlight
-                    ? "bg-blue-500 hover:bg-blue-400 text-white"
-                    : "bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 hover:text-white"
+                    ? "bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30"
+                    : "bg-white/6 hover:bg-white/10 text-zinc-300 hover:text-white"
                 }`}
               >
                 {p.cta}
               </a>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

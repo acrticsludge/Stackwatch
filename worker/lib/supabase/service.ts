@@ -10,6 +10,6 @@ export function createServiceClient() {
         autoRefreshToken: false,
         persistSession: false,
       },
-    }
+    },
   );
 }

@@ -1,3 +1,6 @@
+"use client";
+
+import { motion } from "framer-motion";
 import { getProgressColorClass, relativeTime, METRIC_LABELS, METRIC_UNITS, SERVICE_LABELS } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -13,9 +16,9 @@ interface UsageCardProps {
 }
 
 const SERVICE_ICON_BG: Record<string, string> = {
-  github: "bg-white/[0.05]",
-  vercel: "bg-white/[0.05]",
-  supabase: "bg-white/[0.05]",
+  github: "bg-white/5",
+  vercel: "bg-white/5",
+  supabase: "bg-white/5",
 };
 
 const SERVICE_ICONS: Record<string, React.ReactNode> = {
@@ -63,11 +66,17 @@ export function UsageCard({
   const label = METRIC_LABELS[metricName] ?? metricName;
 
   return (
-    <div className="bg-[#111] border border-white/[0.06] rounded-xl p-5 hover:border-white/10 transition-colors">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      whileHover={{ y: -2, transition: { duration: 0.15 } }}
+      className="group bg-[#111] border border-white/6 rounded-xl p-5 hover:border-white/10 hover:shadow-lg hover:shadow-black/30 transition-[border-color,box-shadow] duration-300 cursor-default"
+    >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2.5">
           <div
-            className={`h-8 w-8 rounded-lg ${SERVICE_ICON_BG[service] ?? "bg-white/[0.05]"} border border-white/[0.06] flex items-center justify-center flex-shrink-0`}
+            className={`h-8 w-8 rounded-lg ${SERVICE_ICON_BG[service] ?? "bg-white/5"} border border-white/6 flex items-center justify-center shrink-0`}
           >
             {SERVICE_ICONS[service]}
           </div>
@@ -83,22 +92,23 @@ export function UsageCard({
 
       <p className="text-xs text-zinc-600 mb-2">{label}</p>
 
-      <div className="h-1.5 w-full rounded-full bg-white/[0.06] mb-2 overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${getDarkProgressClass(pct)}`}
-          style={{ width: `${Math.min(pct, 100)}%` }}
+      <div className="h-1.5 w-full rounded-full bg-white/6 mb-2 overflow-hidden">
+        <motion.div
+          className={`h-full rounded-full ${getDarkProgressClass(pct)}`}
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.min(pct, 100)}%` }}
+          transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
         />
       </div>
 
       <div className="flex items-center justify-between">
         <span className="text-xs text-zinc-600">
-          {currentValue.toLocaleString()} / {limitValue.toLocaleString()}{" "}
-          {unit}
+          {currentValue.toLocaleString()} / {limitValue.toLocaleString()} {unit}
         </span>
         <span className="text-xs text-zinc-600">{pct}% used</span>
       </div>
 
-      <div className="mt-3 pt-3 border-t border-white/[0.04] flex items-center justify-between">
+      <div className="mt-3 pt-3 border-t border-white/4 flex items-center justify-between">
         <span className="text-xs text-zinc-700">
           {lastSyncedAt ? `Synced ${relativeTime(lastSyncedAt)}` : "Never synced"}
         </span>
@@ -123,6 +133,6 @@ export function UsageCard({
           {status}
         </span>
       </div>
-    </div>
+    </motion.div>
   );
 }

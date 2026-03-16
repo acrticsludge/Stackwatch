@@ -22,6 +22,22 @@ export async function fetchVercelUsage(
     },
   });
 
+  switch (res.status) {
+    case 401:
+      throw new Error("Vercel: Invalid or expired API token.");
+    case 403:
+      throw new Error("Vercel: Token lacks billing read permissions.");
+    case 404:
+      // Vercel does not expose a public billing/usage API for Hobby accounts.
+      // Return empty so the integration stays connected but shows no data.
+      console.warn(
+        `[vercel] Billing API unavailable for integration ${integration.id} — Hobby plan accounts are not supported.`
+      );
+      return [];
+    case 429:
+      throw new Error("Vercel: Rate limited. Will retry next cycle.");
+  }
+
   if (!res.ok) {
     throw new Error(`Vercel billing API error: ${res.status}`);
   }

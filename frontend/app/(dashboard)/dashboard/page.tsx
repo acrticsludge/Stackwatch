@@ -30,7 +30,7 @@ export default async function DashboardPage() {
         <h1 className="text-xl font-bold text-white mb-1 tracking-tight">Dashboard</h1>
         <p className="text-zinc-600 mb-8 text-sm">Your usage overview</p>
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="h-14 w-14 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-5">
+          <div className="h-14 w-14 rounded-xl bg-white/4 border border-white/6 flex items-center justify-center mb-5">
             <svg className="h-7 w-7 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
@@ -86,15 +86,13 @@ export default async function DashboardPage() {
             return (
               <div
                 key={integration.id}
-                className="bg-[#111] border border-white/[0.06] rounded-xl p-5"
+                className="bg-[#111] border border-white/6 rounded-xl p-5"
               >
                 <div className="flex items-center gap-2.5 mb-3">
-                  <div className="h-8 w-8 rounded-lg bg-white/[0.05] animate-pulse" />
-                  <div>
-                    <p className="text-sm font-medium text-zinc-200">
-                      {integration.account_label}
-                    </p>
-                    <p className="text-xs text-zinc-600">{integration.service}</p>
+                  <div className="h-8 w-8 rounded-lg bg-white/5 animate-pulse" />
+                  <div className="space-y-1.5">
+                    <div className="h-3 w-24 bg-white/5 rounded animate-pulse" />
+                    <div className="h-2.5 w-16 bg-white/4 rounded animate-pulse" />
                   </div>
                 </div>
                 <p className="text-sm text-zinc-600">
