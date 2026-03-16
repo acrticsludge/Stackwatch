@@ -5,7 +5,8 @@
       "Bash(npm install:*)",
       "Bash(npx tsc:*)",
       "Bash(node -e \"console.log\\(require\\(''./package.json''\\).dependencies.next\\)\")",
-      "Bash(npm show:*)"
+      "Bash(npm show:*)",
+      "Bash(node -e \"console.log\\(require\\(''./package.json''\\).devDependencies.eslint\\)\")"
     ]
   }
 }
