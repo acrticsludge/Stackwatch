@@ -141,6 +141,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          tier: "free" | "pro" | "team";
+          status: "active" | "canceled" | "past_due";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          tier?: "free" | "pro" | "team";
+          status?: "active" | "canceled" | "past_due";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          tier?: "free" | "pro" | "team";
+          status?: "active" | "canceled" | "past_due";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       alert_history: {
         Row: {
           id: string;
