@@ -30,7 +30,7 @@ async function railwayQuery<T>(
   if (res.status === 429) throw new Error("Railway: Rate limited. Will retry next cycle.");
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`Railway API error: ${res.status} — ${body.slice(0, 300)}`);
+    throw new Error(`Railway API error: ${res.status} — ${body}`);
   }
 
   const json = (await res.json()) as {
@@ -45,6 +45,19 @@ async function railwayQuery<T>(
 
   return json.data;
 }
+
+const INTROSPECT_QUERY = `
+  {
+    __schema {
+      queryType {
+        fields {
+          name
+          args { name type { name kind ofType { name } } }
+        }
+      }
+    }
+  }
+`;
 
 const PROJECTS_QUERY = `
   query {
@@ -122,6 +135,11 @@ export async function fetchRailwayUsage(
   // NEVER log token
 
   const isPro = tier === "pro" || tier === "team";
+
+  // DEBUG: discover available query fields
+  const schemaData = await railwayQuery<{ __schema: { queryType: { fields: { name: string }[] } } }>(token, INTROSPECT_QUERY);
+  const usageFields = schemaData.__schema.queryType.fields.map((f) => f.name).filter((n) => /usage|metric|bill|cost/i.test(n));
+  console.log(`[railway] usage-related query fields:`, usageFields.join(", ") || "(none found)");
 
   const projectsData = await railwayQuery<{
     projects: { edges: { node: ProjectNode }[] };
