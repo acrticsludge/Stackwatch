@@ -125,12 +125,14 @@ export async function fetchRailwayUsage(
   }>(token, PROJECTS_QUERY);
 
   const projects = projectsData.projects.edges.map((e) => e.node);
+  console.log(`[railway] Found ${projects.length} project(s) for integration ${integration.id}`);
   if (projects.length === 0) return [];
 
   const totalServiceCount = projects.reduce(
     (sum, p) => sum + p.services.edges.length,
     0
   );
+  console.log(`[railway] Total service count: ${totalServiceCount}`);
   if (totalServiceCount === 0) return [];
 
   const now = new Date();
