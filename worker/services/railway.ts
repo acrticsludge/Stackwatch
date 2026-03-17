@@ -30,7 +30,7 @@ async function railwayQuery<T>(
   if (res.status === 429) throw new Error("Railway: Rate limited. Will retry next cycle.");
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`Railway API error: ${res.status} — ${body}`);
+    throw new Error(`Railway API error: ${res.status} — ${body.slice(0, 200)}`);
   }
 
   const json = (await res.json()) as {
@@ -46,26 +46,6 @@ async function railwayQuery<T>(
   return json.data;
 }
 
-const INTROSPECT_QUERY = `
-  {
-    __schema {
-      queryType {
-        fields {
-          name
-          args { name type { name kind ofType { name } } }
-        }
-      }
-    }
-  }
-`;
-
-const INTROSPECT_ENUM_QUERY = `
-  {
-    __type(name: "MetricMeasurement") {
-      enumValues { name }
-    }
-  }
-`;
 
 const PROJECTS_QUERY = `
   query {
@@ -94,7 +74,7 @@ const PROJECT_USAGE_QUERY = `
       projectId: $projectId
       startDate: $startDate
       endDate: $endDate
-      measurements: [MEMORY_USAGE_GB, NETWORK_TX_GB, NETWORK_RX_GB, DISK_USAGE_GB]
+      measurements: [CPU_USAGE, MEMORY_USAGE_GB, NETWORK_TX_GB, NETWORK_RX_GB, DISK_USAGE_GB]
     ) {
       ... on AggregatedUsage {
         measurement
@@ -145,13 +125,6 @@ export async function fetchRailwayUsage(
 
   const isPro = tier === "pro" || tier === "team";
 
-  // DEBUG: discover usage field args + MetricMeasurement enum values
-  const schemaData = await railwayQuery<{ __schema: { queryType: { fields: { name: string; args: { name: string; type: { name: string | null; kind: string; ofType: { name: string } | null } }[] }[] } } }>(token, INTROSPECT_QUERY);
-  const usageField = schemaData.__schema.queryType.fields.find((f) => f.name === "usage");
-  console.log(`[railway] usage field args:`, JSON.stringify(usageField?.args));
-  const enumData = await railwayQuery<{ __type: { enumValues: { name: string }[] } }>(token, INTROSPECT_ENUM_QUERY);
-  console.log(`[railway] MetricMeasurement enum values:`, JSON.stringify(enumData.__type?.enumValues?.map((v) => v.name)));
-
   const projectsData = await railwayQuery<{
     projects: { edges: { node: ProjectNode }[] };
   }>(token, PROJECTS_QUERY);
@@ -166,7 +139,11 @@ export async function fetchRailwayUsage(
   if (totalServiceCount === 0) return [];
 
   const now = new Date();
-  const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const startDateObj = new Date(now.getFullYear(), now.getMonth(), 1);
+  // Railway returns cumulative sums for memory/CPU. Dividing by period minutes
+  // converts the sum back to an average instantaneous reading.
+  const periodMinutes = Math.max((now.getTime() - startDateObj.getTime()) / 60000, 1);
+  const startDate = startDateObj.toISOString();
   const endDate = now.toISOString();
 
   // Per-project aggregations
@@ -210,11 +187,22 @@ export async function fetchRailwayUsage(
         const val = m.value ?? 0;
 
         switch (m.measurement) {
-          case "MEMORY_USAGE_GB":
-            agg.totalMemoryGB += val;
-            agg.peakMemoryGB = Math.max(agg.peakMemoryGB, val);
+          case "CPU_USAGE": {
+            // val is cumulative sum of CPU fractions; divide by minutes to get average
+            const avgCpu = val / periodMinutes;
+            agg.totalCpuFraction += avgCpu;
+            agg.peakCpuFraction = Math.max(agg.peakCpuFraction, avgCpu);
             anyUsageFetched = true;
             break;
+          }
+          case "MEMORY_USAGE_GB": {
+            // val is cumulative sum of GB readings; divide by minutes to get average GB
+            const avgMemGB = val / periodMinutes;
+            agg.totalMemoryGB += avgMemGB;
+            agg.peakMemoryGB = Math.max(agg.peakMemoryGB, avgMemGB);
+            anyUsageFetched = true;
+            break;
+          }
           case "NETWORK_TX_GB":
             agg.totalNetworkTxMB += val * 1024;
             anyUsageFetched = true;
