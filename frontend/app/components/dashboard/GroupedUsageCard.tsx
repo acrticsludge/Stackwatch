@@ -46,8 +46,9 @@ const SERVICE_ICONS: Record<string, React.ReactNode> = {
     </svg>
   ),
   railway: (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-zinc-200">
-      <path d="M0 11.862A12 12 0 0 0 12 24c2.49 0 4.802-.76 6.716-2.05L3.55 7.782A12.02 12.02 0 0 0 0 11.862ZM23.854 10.5H10.307l8.73 8.73A12 12 0 0 0 23.854 10.5ZM4.912 6.246l13.32 13.32A12 12 0 0 0 4.912 6.247ZM12 0A12 12 0 0 0 2.595 4.81l13.672 13.67A12 12 0 0 0 12 0Z" />
+    <svg viewBox="0 0 1024 1024" fill="currentColor" className="h-4 w-4 text-zinc-200">
+      <path d="M4.756 438.175A520.713 520.713 0 0 0 0 489.735h777.799c-2.716-5.306-6.365-10.09-10.045-14.772-132.97-171.791-204.498-156.896-306.819-161.26-34.114-1.403-57.249-1.967-193.037-1.967-72.677 0-151.688.185-228.628.39-9.96 26.884-19.566 52.942-24.243 74.14h398.571v51.909H4.756ZM783.93 541.696H.399c.82 13.851 2.112 27.517 3.978 40.999h723.39c32.248 0 50.299-18.297 56.162-40.999ZM45.017 724.306S164.941 1018.77 511.46 1024c207.112 0 385.071-123.006 465.907-299.694H45.017Z" />
+      <path d="M511.454 0C319.953 0 153.311 105.16 65.31 260.612c68.771-.144 202.704-.226 202.704-.226h.031v-.051c158.309 0 164.193.707 195.118 1.998l19.149.706c66.7 2.224 148.683 9.384 213.19 58.19 35.015 26.471 85.571 84.896 115.708 126.52 27.861 38.499 35.876 82.756 16.933 125.158-17.436 38.97-54.952 62.215-100.383 62.215H16.69s4.233 17.944 10.58 37.751h970.632A510.385 510.385 0 0 0 1024 512.218C1024.01 229.355 794.532 0 511.454 0Z" />
     </svg>
   ),
 };
@@ -85,7 +86,7 @@ function UsageDetailModal({
       <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
 
       <motion.div
-        className="relative bg-[#111] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl shadow-black/60"
+        className="relative bg-[#111] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl shadow-black/60 max-h-[85vh] flex flex-col"
         initial={{ scale: 0.96, opacity: 0, y: 8 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.96, opacity: 0, y: 8 }}
@@ -93,7 +94,7 @@ function UsageDetailModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between mb-5">
+        <div className="flex items-start justify-between p-6 pb-4 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="h-9 w-9 rounded-lg bg-white/5 border border-white/6 flex items-center justify-center shrink-0">
               {SERVICE_ICONS[service]}
@@ -113,8 +114,8 @@ function UsageDetailModal({
           </button>
         </div>
 
-        {/* Metrics */}
-        <div className="space-y-4">
+        {/* Metrics — scrollable */}
+        <div className="overflow-y-auto flex-1 px-6 space-y-4">
           {snapshots.map((snap) => {
             const pct = Math.round(snap.percent_used);
             const unit = METRIC_UNITS[snap.metric_name] ?? "";
@@ -153,7 +154,7 @@ function UsageDetailModal({
                         key={e.entity_id}
                         className="flex items-center justify-between"
                       >
-                        <span className="text-[11px] text-zinc-600 truncate max-w-[160px]">
+                        <span className="text-[11px] text-zinc-600 truncate max-w-40">
                           {e.entity_label ?? e.entity_id}
                         </span>
                         <span className="text-[11px] text-zinc-600 shrink-0 ml-2">
@@ -169,7 +170,7 @@ function UsageDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="mt-5 pt-4 border-t border-white/4 flex items-center justify-between">
+        <div className="px-6 pt-4 pb-6 mt-2 border-t border-white/4 flex items-center justify-between shrink-0">
           <span className="text-xs text-zinc-700">
             {lastSyncedAt
               ? `Synced ${relativeTime(lastSyncedAt)}`
