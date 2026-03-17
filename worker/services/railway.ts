@@ -81,15 +81,18 @@ const PROJECTS_QUERY = `
 `;
 
 const PROJECT_USAGE_QUERY = `
-  query ProjectUsage($projectId: String!, $startDate: String!, $endDate: String!) {
-    usage(projectId: $projectId, startDate: $startDate, endDate: $endDate) {
+  query ProjectUsage($projectId: String, $startDate: DateTime, $endDate: DateTime) {
+    usage(
+      projectId: $projectId
+      startDate: $startDate
+      endDate: $endDate
+      measurements: [CPU, MEMORY_USAGE_GB, NETWORK_TX_BYTES, NETWORK_RX_BYTES, DISK_USAGE_BYTES]
+    ) {
       ... on AggregatedUsage {
-        measurement {
-          type
-          tags { serviceId }
-          avgValue
-          maxValue
-        }
+        measurement
+        avgValue
+        maxValue
+        tags { serviceId }
       }
     }
   }
@@ -107,7 +110,7 @@ interface ProjectNode {
 }
 
 interface Measurement {
-  type: string;
+  measurement: string;
   tags: { serviceId: string };
   avgValue: number;
   maxValue: number;
@@ -191,15 +194,15 @@ export async function fetchRailwayUsage(
 
     try {
       const usageData = await railwayQuery<{
-        usage: { measurement?: Measurement[] };
+        usage: Measurement[];
       }>(token, PROJECT_USAGE_QUERY, { projectId: project.id, startDate, endDate });
 
-      const measurements = usageData.usage.measurement ?? [];
+      const measurements = usageData.usage ?? [];
       for (const m of measurements) {
         const avg = m.avgValue ?? 0;
         const max = m.maxValue ?? avg;
 
-        switch (m.type) {
+        switch (m.measurement) {
           case "MEMORY_USAGE_GB":
             agg.totalMemoryGB += avg;
             agg.peakMemoryGB = Math.max(agg.peakMemoryGB, max);
