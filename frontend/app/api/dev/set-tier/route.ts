@@ -21,7 +21,10 @@ export async function POST(request: Request) {
   const service = createServiceClient();
   const { error } = await service
     .from("subscriptions")
-    .upsert({ user_id: user.id, tier, status: "active" }, { onConflict: "user_id" });
+    .upsert(
+      { user_id: user.id, tier: tier as "free" | "pro" | "team", status: "active" as const },
+      { onConflict: "user_id" }
+    );
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true, tier });
