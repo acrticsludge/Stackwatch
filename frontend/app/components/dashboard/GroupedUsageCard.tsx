@@ -15,12 +15,15 @@ interface Snapshot {
   current_value: number;
   limit_value: number;
   percent_used: number;
+  entity_id?: string | null;
+  entity_label?: string | null;
 }
 
 interface GroupedUsageCardProps {
   service: string;
   accountLabel: string;
   snapshots: Snapshot[];
+  entitySnapshots?: Snapshot[];
   lastSyncedAt: string | null;
   status: string;
 }
@@ -71,6 +74,7 @@ export function GroupedUsageCard({
   service,
   accountLabel,
   snapshots,
+  entitySnapshots = [],
   lastSyncedAt,
   status,
 }: GroupedUsageCardProps) {
@@ -146,6 +150,9 @@ export function GroupedUsageCard({
               {snapshots.map((snap) => {
                 const pct = Math.round(snap.percent_used);
                 const unit = METRIC_UNITS[snap.metric_name] ?? "";
+                const subRows = entitySnapshots.filter(
+                  (e) => e.metric_name === snap.metric_name,
+                );
                 return (
                   <div key={snap.metric_name}>
                     <div className="flex items-center justify-between mb-1.5">
@@ -171,6 +178,23 @@ export function GroupedUsageCard({
                       {snap.current_value.toLocaleString()} /{" "}
                       {snap.limit_value.toLocaleString()} {unit}
                     </span>
+                    {subRows.length > 0 && (
+                      <div className="mt-2 space-y-1 pl-3 border-l border-white/6">
+                        {subRows.map((e) => (
+                          <div
+                            key={e.entity_id}
+                            className="flex items-center justify-between"
+                          >
+                            <span className="text-[11px] text-zinc-600 truncate max-w-35">
+                              {e.entity_label ?? e.entity_id}
+                            </span>
+                            <span className="text-[11px] text-zinc-600 shrink-0 ml-2">
+                              {e.current_value.toLocaleString()} {unit}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}

@@ -152,7 +152,13 @@ export default async function DashboardPage() {
         {integrations.map((integration) => {
           const integrationSnapshots = Array.from(latestMap.entries())
             .filter(([key]) => key.startsWith(`${integration.id}::`))
-            .map(([, v]) => v);
+            .map(([, v]) => v)
+            .filter((s) => !s.entity_id);
+
+          const entitySnapshots = Array.from(latestMap.entries())
+            .filter(([key]) => key.startsWith(`${integration.id}::`))
+            .map(([, v]) => v)
+            .filter((s) => !!s.entity_id);
 
           if (
             integration.status === "unsupported" ||
@@ -228,6 +234,7 @@ export default async function DashboardPage() {
               service={integration.service}
               accountLabel={integration.account_label}
               snapshots={integrationSnapshots}
+              entitySnapshots={entitySnapshots}
               lastSyncedAt={integration.last_synced_at}
               status={integration.status}
             />
