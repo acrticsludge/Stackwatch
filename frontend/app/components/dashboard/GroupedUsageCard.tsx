@@ -201,6 +201,8 @@ function UsageDetailModal({
   );
 }
 
+const MAX_VISIBLE = 3;
+
 export function GroupedUsageCard({
   service,
   accountLabel,
@@ -211,6 +213,9 @@ export function GroupedUsageCard({
 }: GroupedUsageCardProps) {
   const [open, setOpen] = useState(false);
   const worstPct = Math.round(Math.max(...snapshots.map((s) => s.percent_used)));
+  const sorted = [...snapshots].sort((a, b) => b.percent_used - a.percent_used);
+  const visible = sorted.slice(0, MAX_VISIBLE);
+  const hiddenCount = Math.max(0, snapshots.length - MAX_VISIBLE);
 
   return (
     <>
@@ -219,7 +224,7 @@ export function GroupedUsageCard({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: "easeOut" }}
         onClick={() => setOpen(true)}
-        className="bg-[#111] border border-white/6 rounded-xl p-5 hover:border-white/10 hover:shadow-lg hover:shadow-black/30 transition-[border-color,box-shadow] duration-200 cursor-pointer"
+        className="h-full bg-[#111] border border-white/6 rounded-xl p-5 flex flex-col hover:border-white/10 hover:shadow-lg hover:shadow-black/30 transition-[border-color,box-shadow] duration-200 cursor-pointer"
       >
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
@@ -237,9 +242,9 @@ export function GroupedUsageCard({
           <Badge variant={getBadgeVariant(worstPct)}>{worstPct}%</Badge>
         </div>
 
-        {/* Compact bars */}
-        <div className="space-y-2 mb-3">
-          {snapshots.map((snap) => (
+        {/* Compact bars (top 3 by usage) */}
+        <div className="flex-1 space-y-2 mb-3">
+          {visible.map((snap) => (
             <div key={snap.metric_name} className="flex items-center gap-2">
               <span className="text-xs text-zinc-600 w-32 shrink-0 truncate">
                 {METRIC_LABELS[snap.metric_name] ?? snap.metric_name}
@@ -255,6 +260,11 @@ export function GroupedUsageCard({
               </span>
             </div>
           ))}
+          {hiddenCount > 0 && (
+            <p className="text-[11px] text-zinc-600">
+              +{hiddenCount} more · click for details
+            </p>
+          )}
         </div>
 
         {/* Footer */}

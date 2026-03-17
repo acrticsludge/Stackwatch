@@ -28,7 +28,10 @@ async function railwayQuery<T>(
 
   if (res.status === 401) throw new Error("Railway: Invalid or expired API token.");
   if (res.status === 429) throw new Error("Railway: Rate limited. Will retry next cycle.");
-  if (!res.ok) throw new Error(`Railway API error: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Railway API error: ${res.status} — ${body.slice(0, 300)}`);
+  }
 
   const json = (await res.json()) as {
     data?: T;

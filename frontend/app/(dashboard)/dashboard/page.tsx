@@ -148,7 +148,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Cards grid */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {integrations.map((integration) => {
           const integrationSnapshots = Array.from(latestMap.entries())
             .filter(([key]) => key.startsWith(`${integration.id}::`))
@@ -174,7 +174,7 @@ export default async function DashboardPage() {
             return (
               <div
                 key={integration.id}
-                className={`bg-[#111] border rounded-xl p-5 ${borderClass}`}
+                className={`h-full bg-[#111] border rounded-xl p-5 flex flex-col ${borderClass}`}
               >
                 <div className="flex items-center gap-2.5 mb-3">
                   {isError || isUnsupported ? (
