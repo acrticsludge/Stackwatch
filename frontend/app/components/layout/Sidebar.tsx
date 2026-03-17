@@ -19,11 +19,18 @@ const NAV_ITEMS = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
+const TIER_STYLES: Record<string, string> = {
+  pro: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  team: "bg-violet-500/10 text-violet-400 border-violet-500/20",
+  free: "bg-white/5 text-zinc-500 border-white/8",
+};
+
 interface SidebarProps {
   email?: string;
+  tier?: string;
 }
 
-export function Sidebar({ email }: SidebarProps) {
+export function Sidebar({ email, tier = "free" }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -87,7 +94,15 @@ export function Sidebar({ email }: SidebarProps) {
               <div className="h-6 w-6 rounded-full bg-blue-500/15 border border-blue-500/25 flex items-center justify-center shrink-0 ring-1 ring-blue-500/10">
                 <span className="text-[10px] font-bold text-blue-400">{avatarInitial}</span>
               </div>
-              <p className="text-xs text-zinc-500 truncate">{email}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-zinc-500 truncate">{email}</p>
+              </div>
+              <span className={cn(
+                "shrink-0 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border",
+                TIER_STYLES[tier] ?? TIER_STYLES.free
+              )}>
+                {tier}
+              </span>
             </div>
           )}
           <button
