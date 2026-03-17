@@ -32,9 +32,10 @@ const plans = [
       "30-day alert history",
       "Usage history charts",
     ],
-    cta: "Start Pro",
-    href: "/signup?plan=pro",
+    cta: "Coming soon",
+    href: null,
     highlight: true,
+    comingSoon: true,
   },
   {
     name: "Team",
@@ -50,9 +51,10 @@ const plans = [
       "Team dashboard",
       "Shared alert configs",
     ],
-    cta: "Start Team",
-    href: "/signup?plan=team",
+    cta: "Coming soon",
+    href: null,
     highlight: false,
+    comingSoon: true,
   },
 ];
 
@@ -111,7 +113,7 @@ export function PricingSection() {
               {p.highlight && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="inline-flex items-center text-[10px] font-semibold text-blue-300 bg-blue-500/20 border border-blue-500/30 rounded-full px-2.5 py-0.5 uppercase tracking-wider">
-                    Most popular
+                    Coming soon
                   </span>
                 </div>
               )}
@@ -168,16 +170,28 @@ export function PricingSection() {
                 ))}
               </ul>
 
-              <a
-                href={p.href}
-                className={`flex w-full items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium transition-all ${
-                  p.highlight
-                    ? "bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30"
-                    : "bg-white/6 hover:bg-white/10 text-zinc-300 hover:text-white"
-                }`}
-              >
-                {p.cta}
-              </a>
+              {"comingSoon" in p && p.comingSoon ? (
+                <div
+                  className={`flex w-full items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium cursor-not-allowed opacity-50 ${
+                    p.highlight
+                      ? "bg-blue-500 text-white"
+                      : "bg-white/6 text-zinc-300"
+                  }`}
+                >
+                  {p.cta}
+                </div>
+              ) : (
+                <a
+                  href={p.href!}
+                  className={`flex w-full items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium transition-all ${
+                    p.highlight
+                      ? "bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30"
+                      : "bg-white/6 hover:bg-white/10 text-zinc-300 hover:text-white"
+                  }`}
+                >
+                  {p.cta}
+                </a>
+              )}
             </motion.div>
           ))}
         </motion.div>

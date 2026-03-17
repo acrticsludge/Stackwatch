@@ -36,7 +36,11 @@ const SUPABASE_ICON = (
 function estimateDaysUntilLimit(current: number, limit: number): number | null {
   const now = new Date();
   const dayOfMonth = now.getDate();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysInMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+  ).getDate();
   const daysRemaining = daysInMonth - dayOfMonth;
   if (dayOfMonth === 0 || current <= 0) return null;
   const dailyRate = current / dayOfMonth;
@@ -109,11 +113,15 @@ function MiniUsageCard({
         </span>
         <div className="flex items-center gap-2">
           {daysLeft !== null && (
-            <span className={`text-[10px] tabular-nums ${pct >= 80 ? "text-red-500" : "text-amber-500"}`}>
+            <span
+              className={`text-[10px] tabular-nums ${pct >= 80 ? "text-red-500" : "text-amber-500"}`}
+            >
               ~{daysLeft === 0 ? "today" : `${daysLeft}d`}
             </span>
           )}
-          <span className={`text-[11px] font-semibold tabular-nums ${pctColor}`}>
+          <span
+            className={`text-[11px] font-semibold tabular-nums ${pctColor}`}
+          >
             {pct}%
           </span>
         </div>
@@ -154,8 +162,8 @@ export function Hero() {
               Actions minutes ran out. Nobody knew.
             </p>
             <p className="text-base text-zinc-400 leading-relaxed mb-10">
-              Stackwatch watches your GitHub, Vercel, and Supabase limits —
-              and alerts you{" "}
+              Stackwatch watches your GitHub, Vercel, Railway and Supabase
+              limits — and alerts you{" "}
               <span className="text-white font-medium">before</span> they cut
               you off.
             </p>
@@ -200,7 +208,8 @@ export function Hero() {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-medium text-zinc-200">
-                  GitHub Actions · 94% · <span className="text-red-400">~2 days left</span>
+                  GitHub Actions · 94% ·{" "}
+                  <span className="text-red-400">~2 days left</span>
                 </p>
                 <p className="text-[11px] text-zinc-500 mt-0.5 truncate">
                   Alert sent via email · 2h ago
