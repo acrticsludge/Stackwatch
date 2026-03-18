@@ -9,7 +9,13 @@ function proCheckoutUrl(email?: string) {
   return `${base}${base.includes("?") ? "&" : "?"}email=${encodeURIComponent(email)}`;
 }
 
-export function PricingSection({ userEmail }: { userEmail?: string }) {
+export function PricingSection({
+  userEmail,
+  isPro,
+}: {
+  userEmail?: string;
+  isPro?: boolean;
+}) {
   const plans = [
     {
       name: "Free",
@@ -33,7 +39,7 @@ export function PricingSection({ userEmail }: { userEmail?: string }) {
       description: "For individuals with multiple projects",
       features: [
         "5 accounts per service",
-        "All services",
+        "Per Project breakdown for each service",
         "Email + Slack + Discord alerts + Browser Push",
         "5-minute polling",
         "30-day alert history",
@@ -174,7 +180,7 @@ export function PricingSection({ userEmail }: { userEmail?: string }) {
                 ))}
               </ul>
 
-              {"comingSoon" in p && p.comingSoon ? (
+              {("comingSoon" in p && p.comingSoon) || (p.highlight && isPro) ? (
                 <div
                   className={`flex w-full items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium cursor-not-allowed opacity-50 ${
                     p.highlight
@@ -182,7 +188,7 @@ export function PricingSection({ userEmail }: { userEmail?: string }) {
                       : "bg-white/6 text-zinc-300"
                   }`}
                 >
-                  {p.cta}
+                  {p.highlight && isPro ? "Current plan" : p.cta}
                 </div>
               ) : (
                 <a

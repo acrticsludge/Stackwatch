@@ -18,6 +18,17 @@ export default async function PricingPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const { data: subscription } = user
+    ? await supabase
+        .from("subscriptions")
+        .select("tier")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .maybeSingle()
+    : { data: null };
+
+  const isPro = subscription?.tier === "pro" || subscription?.tier === "team";
+
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <LandingNav isLoggedIn={!!user} />
@@ -34,7 +45,7 @@ export default async function PricingPage() {
             team features.
           </p>
         </div>
-        <PricingSection userEmail={user?.email} />
+        <PricingSection userEmail={user?.email} isPro={isPro} />
       </main>
       <LandingFooter />
     </div>
