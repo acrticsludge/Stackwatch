@@ -28,7 +28,9 @@ export async function POST() {
   }
 
   try {
-    await dodo.subscriptions.cancel(subscription.dodo_subscription_id);
+    await dodo.subscriptions.update(subscription.dodo_subscription_id, {
+      cancel_at_next_billing_date: true,
+    });
     // Don't downgrade locally — the webhook fires at end of billing period
     // and handles the tier/status update then.
     return NextResponse.json({ success: true });
