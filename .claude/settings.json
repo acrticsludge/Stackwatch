@@ -22,7 +22,8 @@
       "Bash(node -e \"const { Webhooks } = require\\(''@dodopayments/nextjs''\\); console.log\\(typeof Webhooks\\); console.log\\(Object.keys\\(Webhooks\\)\\)\")",
       "Bash(node -e \"const { Webhooks } = require\\(''@dodopayments/nextjs''\\); const w = new Webhooks\\(''whsec_test''\\); console.log\\(Object.getOwnPropertyNames\\(Object.getPrototypeOf\\(w\\)\\)\\)\")",
       "Bash(node -e \"const { Webhooks } = require\\(''@dodopayments/nextjs''\\); console.log\\(Webhooks.toString\\(\\).slice\\(0, 300\\)\\)\")",
-      "Bash(node -e \"const { Webhook } = require\\(''standardwebhooks''\\); const w = new Webhook\\(''dGVzdA==''\\); console.log\\(Object.getOwnPropertyNames\\(Object.getPrototypeOf\\(w\\)\\)\\)\")"
+      "Bash(node -e \"const { Webhook } = require\\(''standardwebhooks''\\); const w = new Webhook\\(''dGVzdA==''\\); console.log\\(Object.getOwnPropertyNames\\(Object.getPrototypeOf\\(w\\)\\)\\)\")",
+      "Bash(xargs grep:*)"
     ]
   }
 }

@@ -20,7 +20,10 @@ export async function GET() {
     .maybeSingle();
 
   if (!subscription?.dodo_customer_id) {
-    return NextResponse.json({ error: "No active subscription" }, { status: 404 });
+    return NextResponse.json(
+      { error: "No active subscription" },
+      { status: 404 },
+    );
   }
 
   // Fetch customer portal URL from Dodo
@@ -31,11 +34,14 @@ export async function GET() {
         Authorization: `Bearer ${process.env.DODO_API_KEY}`,
         "Content-Type": "application/json",
       },
-    }
+    },
   );
 
   if (!res.ok) {
-    return NextResponse.json({ error: "Failed to get portal URL" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to get portal URL" },
+      { status: 500 },
+    );
   }
 
   const body = await res.json();

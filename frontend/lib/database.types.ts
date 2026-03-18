@@ -155,6 +155,9 @@ export type Database = {
           status: "active" | "canceled" | "past_due";
           created_at: string;
           updated_at: string;
+          dodo_subscription_id: string | null;
+          dodo_customer_id: string | null;
+          dodo_product_id: string | null;
         };
         Insert: {
           id?: string;
@@ -163,6 +166,9 @@ export type Database = {
           status?: "active" | "canceled" | "past_due";
           created_at?: string;
           updated_at?: string;
+          dodo_subscription_id?: string | null;
+          dodo_customer_id?: string | null;
+          dodo_product_id?: string | null;
         };
         Update: {
           id?: string;
@@ -171,6 +177,9 @@ export type Database = {
           status?: "active" | "canceled" | "past_due";
           created_at?: string;
           updated_at?: string;
+          dodo_subscription_id?: string | null;
+          dodo_customer_id?: string | null;
+          dodo_product_id?: string | null;
         };
         Relationships: [];
       };
