@@ -25,7 +25,10 @@
       "Bash(node -e \"const { Webhook } = require\\(''standardwebhooks''\\); const w = new Webhook\\(''dGVzdA==''\\); console.log\\(Object.getOwnPropertyNames\\(Object.getPrototypeOf\\(w\\)\\)\\)\")",
       "Bash(xargs grep:*)",
       "Bash(node -e \"const wp = require\\(''web-push''\\); const keys = wp.generateVAPIDKeys\\(\\); console.log\\(''Public:'', keys.publicKey\\); console.log\\(''Private:'', keys.privateKey\\);\")",
-      "Bash(\"c:/Anubhav/Web Dev Projects/Watch/watch/frontend/.env.local\")"
+      "Bash(\"c:/Anubhav/Web Dev Projects/Watch/watch/frontend/.env.local\")",
+      "Bash(grep -r createPortalSession 'c:/Anubhav/Web Dev Projects/Watch/watch/frontend/node_modules/dodopayments' --include=*.d.ts -l)",
+      "Bash(find 'c:/Anubhav/Web Dev Projects/Watch/watch/frontend/node_modules/dodopayments' -name *.d.ts)",
+      "Bash(find 'c:/Anubhav/Web Dev Projects/Watch/watch/frontend/node_modules/dodopayments' -name *.ts)"
     ]
   }
 }

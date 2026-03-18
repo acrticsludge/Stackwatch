@@ -46,13 +46,13 @@ export async function POST(req: NextRequest) {
   if (existing.data) {
     await supabase
       .from("alert_channels")
-      .update({ config: pushSub as object, enabled: true })
+      .update({ config: pushSub as unknown as import("@/lib/database.types").Json, enabled: true })
       .eq("id", existing.data.id);
   } else {
     await supabase.from("alert_channels").insert({
       user_id: user.id,
       type: "push",
-      config: pushSub as object,
+      config: pushSub as unknown as import("@/lib/database.types").Json,
       enabled: true,
     });
   }

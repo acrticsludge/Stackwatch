@@ -36,21 +36,26 @@ export async function POST(req: NextRequest) {
   const dodoSubscriptionId = data.subscription_id as string | undefined;
   const dodoCustomerId = customer?.customer_id as string | undefined;
   const productId = data.product_id as string | undefined;
+  const metadata = data.metadata as Record<string, string> | undefined;
 
-  if (!customerEmail) {
-    return NextResponse.json({ received: true });
+  // Prefer user_id from checkout metadata (fast, reliable)
+  // Fall back to email lookup for webhooks triggered outside our checkout flow
+  let userId: string | undefined = metadata?.user_id;
+
+  if (!userId) {
+    if (!customerEmail) {
+      return NextResponse.json({ received: true });
+    }
+    const { data: userList } = await supabase.auth.admin.listUsers({
+      perPage: 1000,
+    });
+    const user = userList?.users.find((u) => u.email === customerEmail);
+    if (!user) {
+      console.error(`[dodo webhook] no user found for email: ${customerEmail}`);
+      return NextResponse.json({ received: true });
+    }
+    userId = user.id;
   }
-
-  // Look up user by email
-  const { data: userList } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-  const user = userList?.users.find((u) => u.email === customerEmail);
-
-  if (!user) {
-    console.error(`[dodo webhook] no user found for email: ${customerEmail}`);
-    return NextResponse.json({ received: true });
-  }
-
-  const userId = user.id;
 
   switch (type) {
     case "subscription.created":

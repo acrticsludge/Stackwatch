@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dodo } from "@/lib/dodo";
 
 export async function GET() {
   const supabase = await createClient();
@@ -14,7 +15,7 @@ export async function GET() {
 
   const { data: subscription } = await supabase
     .from("subscriptions")
-    .select("dodo_subscription_id, dodo_customer_id")
+    .select("dodo_customer_id")
     .eq("user_id", user.id)
     .eq("status", "active")
     .maybeSingle();
@@ -26,24 +27,17 @@ export async function GET() {
     );
   }
 
-  // Fetch customer portal URL from Dodo
-  const res = await fetch(
-    `https://api.dodopayments.com/subscriptions/${subscription.dodo_subscription_id}/customer-portal`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.DODO_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-    },
-  );
+  try {
+    const portal = await dodo.customers.customerPortal.create(
+      subscription.dodo_customer_id,
+    );
 
-  if (!res.ok) {
+    return NextResponse.json({ url: portal.link });
+  } catch (err) {
+    console.error("[portal] failed:", err);
     return NextResponse.json(
       { error: "Failed to get portal URL" },
       { status: 500 },
     );
   }
-
-  const body = await res.json();
-  return NextResponse.json({ url: body.url ?? body.portal_url });
 }

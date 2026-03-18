@@ -18,8 +18,11 @@ import { createClient } from "@/lib/supabase/browser";
 import { METRIC_LABELS, SERVICE_LABELS } from "@/lib/utils";
 
 function ManagePortalButton() {
+  const [loading, setLoading] = useState(false);
   async function openPortal() {
+    setLoading(true);
     const res = await fetch("/api/billing/portal");
+    setLoading(false);
     if (!res.ok) return;
     const { url } = await res.json();
     if (url) window.location.href = url;
@@ -27,9 +30,31 @@ function ManagePortalButton() {
   return (
     <button
       onClick={openPortal}
-      className="inline-flex items-center justify-center rounded-md bg-white/6 hover:bg-white/10 px-4 py-2.5 text-sm font-medium text-zinc-300 hover:text-white transition-colors"
+      disabled={loading}
+      className="inline-flex items-center justify-center rounded-md bg-white/6 hover:bg-white/10 px-4 py-2.5 text-sm font-medium text-zinc-300 hover:text-white transition-colors disabled:opacity-50"
     >
-      Manage subscription
+      {loading ? "Loading..." : "Manage subscription"}
+    </button>
+  );
+}
+
+function UpgradeButton() {
+  const [loading, setLoading] = useState(false);
+  async function startCheckout() {
+    setLoading(true);
+    const res = await fetch("/api/billing/checkout", { method: "POST" });
+    setLoading(false);
+    if (!res.ok) return;
+    const { url } = await res.json();
+    if (url) window.location.href = url;
+  }
+  return (
+    <button
+      onClick={startCheckout}
+      disabled={loading}
+      className="inline-flex items-center justify-center rounded-md bg-blue-500 hover:bg-blue-400 px-4 py-2.5 text-sm font-medium text-white transition-colors shadow-lg shadow-blue-500/20 disabled:opacity-50"
+    >
+      {loading ? "Loading..." : "Upgrade to Pro — $10/mo"}
     </button>
   );
 }
@@ -585,12 +610,7 @@ export function SettingsContent({
               <p className="text-zinc-400 text-sm mb-4">
                 Upgrade to Pro for multiple accounts, Slack &amp; Discord alerts, 5-minute polling, and 30-day history.
               </p>
-              <a
-                href={`${process.env.NEXT_PUBLIC_DODO_PRO_CHECKOUT_URL ?? "/pricing"}${process.env.NEXT_PUBLIC_DODO_PRO_CHECKOUT_URL?.includes("?") ? "&" : "?"}email=${encodeURIComponent(userEmail)}`}
-                className="inline-flex items-center justify-center rounded-md bg-blue-500 hover:bg-blue-400 px-4 py-2.5 text-sm font-medium text-white transition-colors shadow-lg shadow-blue-500/20"
-              >
-                Upgrade to Pro — $10/mo
-              </a>
+              <UpgradeButton />
             </div>
           ) : (
             <ManagePortalButton />
