@@ -14,11 +14,6 @@ import { LandingFooter } from "@/app/components/landing/LandingFooter";
 import { createClient } from "@/lib/supabase/server";
 import { getSession, getSubscription } from "@/lib/queries/user";
 
-// Opt this route into Partial Prerendering.
-// Static sections (Hero, HowItWorks, FAQ, etc.) are served from CDN edge.
-// Auth-dependent sections (nav + pricing) stream in per-request.
-export const experimental_ppr = true;
-
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://stackwatch.pulsemonitor.dev";
 
