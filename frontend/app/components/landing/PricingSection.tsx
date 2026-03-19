@@ -44,7 +44,7 @@ function PromoReveal() {
       onClick={copy}
       className="w-full mt-4 flex items-center justify-between gap-2 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs transition-all hover:bg-blue-500/15 group"
     >
-      <span className="text-zinc-400">50% off first 3 months:</span>
+      <span className="text-zinc-400">50% off first month:</span>
       <span className="font-mono font-bold text-blue-300 tracking-wider">
         {PROMO_CODE}
       </span>
