@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { getSubscription } from "@/lib/queries/user";
 import { GroupedUsageCard } from "@/app/components/dashboard/GroupedUsageCard";
 import { DashboardRefresher } from "./DashboardRefresher";
 import { Button } from "@/app/components/ui/button";
@@ -7,6 +9,14 @@ import Link from "next/link";
 import { FREE_METRICS } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Dashboard" };
+
+interface Integration {
+  id: string;
+  service: string;
+  account_label: string;
+  status: string;
+  last_synced_at: string | null;
+}
 
 interface LatestSnapshot {
   integration_id: string;
@@ -22,21 +32,11 @@ interface LatestSnapshot {
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const [{ data: integrations }, { data: subscription }] = await Promise.all([
-    supabase
-      .from("integrations")
-      .select("id, service, account_label, status, last_synced_at")
-      .neq("status", "disconnected")
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("subscriptions")
-      .select("tier")
-      .eq("status", "active")
-      .maybeSingle(),
-  ]);
-
-  const tier = subscription?.tier ?? "free";
-  const isFree = tier === "free";
+  const { data: integrations } = await supabase
+    .from("integrations")
+    .select("id, service, account_label, status, last_synced_at")
+    .neq("status", "disconnected")
+    .order("created_at", { ascending: true });
 
   if (!integrations || integrations.length === 0) {
     return (
@@ -51,7 +51,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center py-16 text-center">
-          <div className="h-16 w-16 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-5">
+          <div className="h-16 w-16 rounded-2xl bg-white/4 border border-white/6 flex items-center justify-center mb-5">
             <svg
               className="h-8 w-8 text-zinc-600"
               fill="none"
@@ -81,15 +81,48 @@ export default async function DashboardPage() {
     );
   }
 
+  return (
+    <div>
+      {/* Page header — renders immediately from the fast integrations query */}
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">
+            Dashboard
+          </h1>
+          <p className="text-zinc-500 text-sm mt-1">
+            {integrations.length} service{integrations.length !== 1 ? "s" : ""}{" "}
+            connected
+          </p>
+        </div>
+        <DashboardRefresher />
+      </div>
+
+      {/* Status + cards stream in once snapshot query resolves */}
+      <Suspense fallback={<UsageSkeleton />}>
+        <UsageContent integrations={integrations} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function UsageContent({ integrations }: { integrations: Integration[] }) {
+  const supabase = await createClient();
   const integrationIds = integrations.map((i) => i.id);
 
-  const { data: snapshots } = await supabase
-    .from("usage_snapshots")
-    .select(
-      "integration_id, metric_name, current_value, limit_value, percent_used, entity_id, entity_label, recorded_at",
-    )
-    .in("integration_id", integrationIds)
-    .order("recorded_at", { ascending: false });
+  // subscription is served from cache (shared with layout — zero extra DB hit)
+  const [subscription, { data: snapshots }] = await Promise.all([
+    getSubscription(),
+    supabase
+      .from("usage_snapshots")
+      .select(
+        "integration_id, metric_name, current_value, limit_value, percent_used, entity_id, entity_label, recorded_at",
+      )
+      .in("integration_id", integrationIds)
+      .order("recorded_at", { ascending: false }),
+  ]);
+
+  const tier = subscription?.tier ?? "free";
+  const isFree = tier === "free";
 
   // Key includes entity_id so per-entity snapshots get their own latest entry
   const latestMap = new Map<string, LatestSnapshot>();
@@ -101,41 +134,28 @@ export default async function DashboardPage() {
   }
 
   const integrationServiceMap = new Map(
-    (integrations ?? []).map((i) => [i.id, i.service]),
+    integrations.map((i) => [i.id, i.service]),
   );
 
   const allSnapshots = Array.from(latestMap.values());
-  // Status counts: aggregate (non-entity) snapshots only, filtered by tier
   const aggregateSnapshots = allSnapshots.filter((s) => {
     if (s.entity_id) return false;
     if (!isFree) return true;
     const service = integrationServiceMap.get(s.integration_id);
     return (FREE_METRICS[service ?? ""] ?? []).includes(s.metric_name);
   });
-  const criticalCount = aggregateSnapshots.filter((s) => s.percent_used >= 80).length;
+  const criticalCount = aggregateSnapshots.filter(
+    (s) => s.percent_used >= 80,
+  ).length;
   const warningCount = aggregateSnapshots.filter(
     (s) => s.percent_used >= 60 && s.percent_used < 80,
   ).length;
-  const healthyCount = aggregateSnapshots.filter((s) => s.percent_used < 60).length;
+  const healthyCount = aggregateSnapshots.filter(
+    (s) => s.percent_used < 60,
+  ).length;
 
   return (
-    <div>
-      {/* Page header */}
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
-            Dashboard
-          </h1>
-          <p className="text-zinc-500 text-sm mt-1">
-            {integrations.length} service{integrations.length !== 1 ? "s" : ""}{" "}
-            connected
-            {aggregateSnapshots.length > 0 &&
-              ` · ${aggregateSnapshots.length} metric${aggregateSnapshots.length !== 1 ? "s" : ""} tracked`}
-          </p>
-        </div>
-        <DashboardRefresher />
-      </div>
-
+    <>
       {/* Status summary */}
       {aggregateSnapshots.length > 0 && (
         <div className="grid grid-cols-3 gap-3 mb-8">
@@ -165,7 +185,7 @@ export default async function DashboardPage() {
         <p className="text-xs font-medium text-zinc-600 uppercase tracking-widest shrink-0">
           Usage
         </p>
-        <div className="flex-1 h-px bg-white/[0.05]" />
+        <div className="flex-1 h-px bg-white/5" />
       </div>
 
       {/* Cards grid */}
@@ -269,6 +289,36 @@ export default async function DashboardPage() {
           );
         })}
       </div>
-    </div>
+    </>
+  );
+}
+
+function UsageSkeleton() {
+  return (
+    <>
+      <div className="grid grid-cols-3 gap-3 mb-8">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="bg-[#111] border border-white/6 rounded-xl px-4 py-3.5"
+          >
+            <div className="h-3 w-14 bg-white/5 rounded animate-pulse mb-3" />
+            <div className="h-7 w-8 bg-white/5 rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 mb-5">
+        <div className="h-3 w-12 bg-white/5 rounded animate-pulse" />
+        <div className="flex-1 h-px bg-white/5" />
+      </div>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="bg-[#111] border border-white/6 rounded-xl p-5 h-48 animate-pulse"
+          />
+        ))}
+      </div>
+    </>
   );
 }

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getSession, getSubscription } from "@/lib/queries/user";
 import { Sidebar } from "@/app/components/layout/Sidebar";
 import { ProLaunchBanner } from "@/app/components/dashboard/ProLaunchBanner";
 
@@ -8,22 +8,13 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const session = await getSession();
 
   if (!session) {
     redirect("/login");
   }
 
-  const { data: subscription } = await supabase
-    .from("subscriptions")
-    .select("tier")
-    .eq("user_id", session.user.id)
-    .eq("status", "active")
-    .maybeSingle();
-
+  const subscription = await getSubscription();
   const tier = subscription?.tier ?? "free";
 
   return (

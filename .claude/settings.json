@@ -28,7 +28,8 @@
       "Bash(\"c:/Anubhav/Web Dev Projects/Watch/watch/frontend/.env.local\")",
       "Bash(grep -r createPortalSession 'c:/Anubhav/Web Dev Projects/Watch/watch/frontend/node_modules/dodopayments' --include=*.d.ts -l)",
       "Bash(find 'c:/Anubhav/Web Dev Projects/Watch/watch/frontend/node_modules/dodopayments' -name *.d.ts)",
-      "Bash(find 'c:/Anubhav/Web Dev Projects/Watch/watch/frontend/node_modules/dodopayments' -name *.ts)"
+      "Bash(find 'c:/Anubhav/Web Dev Projects/Watch/watch/frontend/node_modules/dodopayments' -name *.ts)",
+      "Bash(node -e \"const p = require\\(''./package.json''\\); console.log\\(''next:'', p.dependencies?.next, ''react:'', p.dependencies?.react\\)\")"
     ]
   }
 }

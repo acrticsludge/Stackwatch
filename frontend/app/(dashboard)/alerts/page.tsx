@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { getSubscription } from "@/lib/queries/user";
 import { METRIC_LABELS, SERVICE_LABELS, relativeTime } from "@/lib/utils";
 import { Badge } from "@/app/components/ui/badge";
 import { TIER_LIMITS } from "@/lib/tiers";
@@ -9,40 +10,24 @@ export const metadata: Metadata = { title: "Alert History" };
 export default async function AlertsPage() {
   const supabase = await createClient();
 
-  const { data: subscription } = await supabase
-    .from("subscriptions")
-    .select("tier")
-    .eq("status", "active")
-    .maybeSingle();
+  // subscription served from cache — no extra DB round-trip
+  const subscription = await getSubscription();
 
   const tier = (subscription?.tier as keyof typeof TIER_LIMITS) ?? "free";
   const historyDays = TIER_LIMITS[tier]?.historyDays ?? TIER_LIMITS.free.historyDays;
   const since = new Date(Date.now() - historyDays * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data: historyRaw } = await supabase
+  // Single query with join — eliminates the sequential integrations waterfall
+  const { data: history } = await supabase
     .from("alert_history")
-    .select("id, metric_name, percent_used, channel, sent_at, integration_id")
+    .select(
+      "id, metric_name, percent_used, channel, sent_at, integration_id, integration:integrations(id, service, account_label)",
+    )
     .gte("sent_at", since)
     .order("sent_at", { ascending: false })
     .limit(200);
 
-  const integrationIds = [
-    ...new Set((historyRaw ?? []).map((h) => h.integration_id)),
-  ];
-  const { data: integrations } =
-    integrationIds.length > 0
-      ? await supabase
-          .from("integrations")
-          .select("id, service, account_label")
-          .in("id", integrationIds)
-      : { data: [] };
-
-  const intgMap = new Map((integrations ?? []).map((i) => [i.id, i]));
-
-  const history = (historyRaw ?? []).map((h) => ({
-    ...h,
-    integration: intgMap.get(h.integration_id) ?? null,
-  }));
+  const rows = history ?? [];
 
   return (
     <div>
@@ -52,8 +37,8 @@ export default async function AlertsPage() {
             Alert History
           </h1>
           <p className="text-zinc-500 text-sm mt-1">
-            {history.length > 0
-              ? `${history.length} alert${history.length !== 1 ? "s" : ""} in the last ${historyDays} days`
+            {rows.length > 0
+              ? `${rows.length} alert${rows.length !== 1 ? "s" : ""} in the last ${historyDays} days`
               : `A log of alerts from the last ${historyDays} days`}
           </p>
         </div>
@@ -67,7 +52,7 @@ export default async function AlertsPage() {
         )}
       </div>
 
-      {!history || history.length === 0 ? (
+      {rows.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="h-14 w-14 rounded-xl bg-white/4 border border-white/6 flex items-center justify-center mb-4">
             <svg
@@ -114,8 +99,10 @@ export default async function AlertsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/4">
-              {history.map((row) => {
-                const intg = row.integration;
+              {rows.map((row) => {
+                const intg = Array.isArray(row.integration)
+                  ? row.integration[0]
+                  : row.integration;
                 const pct = Math.round(row.percent_used);
                 return (
                   <tr

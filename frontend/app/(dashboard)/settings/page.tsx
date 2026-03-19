@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { getSession, getSubscription } from "@/lib/queries/user";
 import { SettingsContent } from "./SettingsContent";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -12,22 +13,17 @@ export default async function SettingsPage({
   const { tab } = await searchParams;
   const supabase = await createClient();
 
-  const { data: { session } } = await supabase.auth.getSession();
-
-  const [
-    { data: integrations },
-    { data: alertConfigs },
-    { data: alertChannels },
-    { data: subscription },
-  ] = await Promise.all([
-    supabase
-      .from("integrations")
-      .select("id, service, account_label")
-      .neq("status", "disconnected"),
-    supabase.from("alert_configs").select("*"),
-    supabase.from("alert_channels").select("id, type, config, enabled"),
-    supabase.from("subscriptions").select("tier").eq("status", "active").maybeSingle(),
-  ]);
+  const [session, subscription, { data: integrations }, { data: alertConfigs }, { data: alertChannels }] =
+    await Promise.all([
+      getSession(),
+      getSubscription(),
+      supabase
+        .from("integrations")
+        .select("id, service, account_label")
+        .neq("status", "disconnected"),
+      supabase.from("alert_configs").select("*"),
+      supabase.from("alert_channels").select("id, type, config, enabled"),
+    ]);
 
   // Auto-provision email channel for users who signed up before this was added
   let finalAlertChannels = alertChannels ?? [];

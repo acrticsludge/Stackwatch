@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { getSubscription } from "@/lib/queries/user";
 import { IntegrationsContent } from "./IntegrationsContent";
 
 export const metadata: Metadata = { title: "Integrations" };
@@ -7,13 +8,13 @@ export const metadata: Metadata = { title: "Integrations" };
 export default async function IntegrationsPage() {
   const supabase = await createClient();
 
-  const [{ data: integrations }, { data: subscription }] = await Promise.all([
+  const [{ data: integrations }, subscription] = await Promise.all([
     supabase
       .from("integrations")
       .select("id, service, account_label, status, created_at, last_synced_at, meta")
       .neq("status", "disconnected")
       .order("created_at", { ascending: true }),
-    supabase.from("subscriptions").select("tier").eq("status", "active").maybeSingle(),
+    getSubscription(),
   ]);
 
   const tier = subscription?.tier ?? "free";

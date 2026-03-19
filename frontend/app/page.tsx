@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { LandingNav } from "@/app/components/landing/LandingNav";
 import { Hero } from "@/app/components/landing/Hero";
 import { ProblemSection } from "@/app/components/landing/ProblemSection";
@@ -11,6 +12,12 @@ import { CTASection } from "@/app/components/landing/CTASection";
 import { FAQSection } from "@/app/components/landing/FAQSection";
 import { LandingFooter } from "@/app/components/landing/LandingFooter";
 import { createClient } from "@/lib/supabase/server";
+import { getSession, getSubscription } from "@/lib/queries/user";
+
+// Opt this route into Partial Prerendering.
+// Static sections (Hero, HowItWorks, FAQ, etc.) are served from CDN edge.
+// Auth-dependent sections (nav + pricing) stream in per-request.
+export const experimental_ppr = true;
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://stackwatch.pulsemonitor.dev";
@@ -37,52 +44,46 @@ const jsonLd = {
   description:
     "Monitoring platform for developer tool usage limits. Get alerted before you hit limits on GitHub Actions, Vercel, and Supabase.",
   offers: [
-    {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-      name: "Free",
-    },
-    {
-      "@type": "Offer",
-      price: "10",
-      priceCurrency: "USD",
-      name: "Pro",
-    },
-    {
-      "@type": "Offer",
-      price: "30",
-      priceCurrency: "USD",
-      name: "Team",
-    },
+    { "@type": "Offer", price: "0", priceCurrency: "USD", name: "Free" },
+    { "@type": "Offer", price: "10", priceCurrency: "USD", name: "Pro" },
+    { "@type": "Offer", price: "30", priceCurrency: "USD", name: "Team" },
   ],
 };
 
-export default async function LandingPage() {
+// ─── Dynamic async sub-components ────────────────────────────────────────────
+
+async function DynamicNav() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  return <LandingNav isLoggedIn={!!user} />;
+}
 
-  const { data: subscription } = user
-    ? await supabase
-        .from("subscriptions")
-        .select("tier")
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .maybeSingle()
-    : { data: null };
+async function DynamicPricingSection() {
+  const session = await getSession();
+  const sub = session ? await getSubscription() : null;
+  const isPro = sub?.tier === "pro" || sub?.tier === "team";
+  return <PricingSection userEmail={session?.user?.email} isPro={isPro} />;
+}
 
-  const isPro = subscription?.tier === "pro" || subscription?.tier === "team";
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
+export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <LandingNav isLoggedIn={!!user} />
+
+      {/* Nav: streams in with auth state; static fallback shows immediately */}
+      <Suspense fallback={<LandingNav isLoggedIn={false} />}>
+        <DynamicNav />
+      </Suspense>
+
       <main>
+        {/* All sections below are fully static — rendered at build time */}
         <Hero />
         <ProblemSection />
         <HowItWorks />
@@ -108,9 +109,15 @@ export default async function LandingPage() {
 
         <AlertChannelsSection />
         <CTASection />
-        <PricingSection userEmail={user?.email} isPro={isPro} />
+
+        {/* Pricing: streams in with isPro/userEmail; static fallback shows immediately */}
+        <Suspense fallback={<PricingSection />}>
+          <DynamicPricingSection />
+        </Suspense>
+
         <FAQSection />
       </main>
+
       <LandingFooter />
     </div>
   );
