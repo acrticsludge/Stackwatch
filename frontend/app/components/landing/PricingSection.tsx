@@ -1,7 +1,87 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
+
+const PROMO_CODE = "ST62D62ISFG";
+
+function PromoReveal() {
+  const [revealed, setRevealed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  function copy() {
+    navigator.clipboard.writeText(PROMO_CODE);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  if (!revealed) {
+    return (
+      <button
+        onClick={() => setRevealed(true)}
+        className="w-full mt-4 flex items-center justify-center gap-1.5 rounded-md border border-dashed border-blue-500/30 bg-blue-500/5 px-3 py-2 text-xs text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/50 transition-all"
+      >
+        <svg
+          className="h-3 w-3"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+          />
+        </svg>
+        Reveal launch discount
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={copy}
+      className="w-full mt-4 flex items-center justify-between gap-2 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs transition-all hover:bg-blue-500/15 group"
+    >
+      <span className="text-zinc-400">50% off first 3 months:</span>
+      <span className="font-mono font-bold text-blue-300 tracking-wider">
+        {PROMO_CODE}
+      </span>
+      <span className="text-zinc-600 group-hover:text-zinc-400 transition-colors ml-auto shrink-0">
+        {copied ? (
+          <svg
+            className="h-3.5 w-3.5 text-emerald-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2.5}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        ) : (
+          <svg
+            className="h-3.5 w-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+            />
+          </svg>
+        )}
+      </span>
+    </button>
+  );
+}
 
 function proCheckoutUrl(email?: string) {
   const base = process.env.NEXT_PUBLIC_DODO_PRO_CHECKOUT_URL ?? "/pricing";
@@ -91,9 +171,13 @@ export function PricingSection({
           <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">
             Simple, transparent pricing
           </h2>
-          <p className="text-zinc-500 text-base">
+          <p className="text-zinc-500 text-base mb-3">
             Start free. Upgrade when you need more.
           </p>
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Launch pricing — rates locked for early adopters
+          </span>
         </motion.div>
 
         <motion.div
@@ -179,6 +263,8 @@ export function PricingSection({
                   </li>
                 ))}
               </ul>
+
+              {p.highlight && !isPro && <PromoReveal />}
 
               {("comingSoon" in p && p.comingSoon) || (p.highlight && isPro) ? (
                 <div

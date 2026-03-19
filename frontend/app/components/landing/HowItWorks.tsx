@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 
@@ -31,7 +32,7 @@ export function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="py-24 bg-[#0a0a0a] border-t border-white/[0.04]"
+      className="py-24 bg-[#0a0a0a] border-t border-white/4"
       ref={ref}
     >
       <div className="max-w-5xl mx-auto px-6">
@@ -67,8 +68,8 @@ export function HowItWorks() {
             >
               {/* Connector line */}
               {i < steps.length - 1 && (
-                <div className="hidden md:block absolute top-4 left-[calc(100%+1.25rem)] right-[-1.25rem] h-px z-0">
-                  <div className="h-full bg-gradient-to-r from-white/[0.08] to-transparent" />
+                <div className="hidden md:block absolute top-4 left-[calc(100%+1.25rem)] -right-5 h-px z-0">
+                  <div className="h-full bg-linear-to-r from-white/8 to-transparent" />
                 </div>
               )}
 
@@ -86,6 +87,21 @@ export function HowItWorks() {
             </motion.div>
           ))}
         </div>
+
+        <motion.div
+          className="mt-12 text-center"
+          initial={{ opacity: 0, y: 16 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.5 }}
+        >
+          <Link
+            href="/signup"
+            className="inline-flex items-center gap-2 h-10 px-6 rounded-lg bg-white text-zinc-900 text-sm font-medium hover:bg-zinc-100 transition-colors"
+          >
+            Get started free →
+          </Link>
+          <p className="mt-3 text-xs text-zinc-600">No credit card required.</p>
+        </motion.div>
       </div>
     </section>
   );

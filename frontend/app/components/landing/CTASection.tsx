@@ -19,7 +19,7 @@ export function CTASection() {
             href="/signup"
             className="inline-flex items-center h-10 px-6 rounded-lg bg-white text-zinc-900 text-sm font-medium hover:bg-zinc-100 transition-colors"
           >
-            Start for free
+            Start monitoring for free →
           </Link>
           <Link
             href="/pricing"

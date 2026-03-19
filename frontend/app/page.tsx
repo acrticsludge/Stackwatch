@@ -18,7 +18,7 @@ const APP_URL =
 export const metadata: Metadata = {
   title: "Stackwatch — Monitor your dev stack limits",
   description:
-    "Get alerted before you hit limits on GitHub Actions, Vercel, and Supabase. One dashboard, real-time alerts.",
+    "Get alerted before you hit limits on GitHub Actions, Vercel, and Supabase. One dashboard for real-time usage monitoring and alerts — so you never get surprised by a hard limit again.",
   alternates: {
     canonical: APP_URL,
   },
@@ -99,8 +99,7 @@ export default async function LandingPage() {
                 See it in action
               </h2>
               <p className="text-zinc-500 text-base max-w-xl mx-auto">
-                This is what your dashboard looks like. No signup needed to
-                explore.
+                This is what your dashboard looks like. Explore freely — no strings attached.
               </p>
             </div>
             <DemoWidget />

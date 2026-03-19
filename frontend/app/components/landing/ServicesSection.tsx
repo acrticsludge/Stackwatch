@@ -64,7 +64,7 @@ export function ServicesSection() {
             Integrations
           </p>
           <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">
-            Supported services
+            Connect and monitor your critical tools
           </h2>
           <p className="text-zinc-500 text-base">
             Connect once, monitor everything.{" "}

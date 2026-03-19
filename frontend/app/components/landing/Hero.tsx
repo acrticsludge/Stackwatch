@@ -149,7 +149,7 @@ export function Hero() {
           <div className="max-w-xl">
             <p className="text-[11px] font-mono text-zinc-600 uppercase tracking-[0.18em] mb-8 flex items-center gap-2">
               <span className="h-px w-5 bg-zinc-700 inline-block" />
-              Quick and simple setup without the hassle.
+              Usage monitoring for developers
             </p>
 
             <h1 className="text-[3.25rem] md:text-[3.75rem] font-bold text-white tracking-tight leading-[1.06] mb-5">
