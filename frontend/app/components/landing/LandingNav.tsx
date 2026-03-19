@@ -44,13 +44,7 @@ export function LandingNav({ isLoggedIn = false }: LandingNavProps) {
 
         <nav className="hidden md:flex items-center gap-1">
           <a
-            href="#how-it-works"
-            className="text-sm text-zinc-500 hover:text-white transition-colors px-3 py-1.5 rounded-md hover:bg-white/[0.04]"
-          >
-            How it works
-          </a>
-          <a
-            href="#pricing"
+            href="/pricing"
             className="text-sm text-zinc-500 hover:text-white transition-colors px-3 py-1.5 rounded-md hover:bg-white/[0.04]"
           >
             Pricing
