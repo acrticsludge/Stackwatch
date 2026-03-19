@@ -9,7 +9,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   experimental: {
-    ppr: "incremental",
+    cacheComponents: true,
   },
   serverExternalPackages: ["crypto"],
   images: {
