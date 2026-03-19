@@ -2,15 +2,17 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Cached per-request session fetch.
- * Called from layout + multiple pages — only one DB round-trip per request.
+ * Cached per-request user fetch.
+ * Uses getUser() (server-verified) instead of getSession() (cookie-only, unverified).
+ * Called from layout + multiple pages — only one Auth round-trip per request.
  */
 export const getSession = cache(async () => {
   const supabase = await createClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session;
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  return { user };
 });
 
 /**
