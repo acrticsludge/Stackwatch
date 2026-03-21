@@ -27,6 +27,15 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function UsageHistoryChart({ metricName, snapshots }: UsageHistoryChartProps) {
   if (snapshots.length === 0) {
     return (
@@ -35,7 +44,7 @@ export function UsageHistoryChart({ metricName, snapshots }: UsageHistoryChartPr
   }
 
   const data = snapshots.map((s) => ({
-    date: formatDate(s.recorded_at),
+    ts: s.recorded_at,          // raw ISO — unique per point, used as dataKey
     pct: Math.round(s.percent_used),
     value: s.current_value,
     limit: s.limit_value,
@@ -61,14 +70,15 @@ export function UsageHistoryChart({ metricName, snapshots }: UsageHistoryChartPr
       <ResponsiveContainer width="100%" height={120}>
         <LineChart data={data} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
           <XAxis
-            dataKey="date"
+            dataKey="ts"
             tick={{ fontSize: 10, fill: "#52525b" }}
             tickLine={false}
             axisLine={false}
             interval="preserveStartEnd"
+            tickFormatter={(v) => formatDate(v)}
           />
           <YAxis
-            domain={[0, 100]}
+            domain={[0, Math.max(100, max)]}
             tick={{ fontSize: 10, fill: "#52525b" }}
             tickLine={false}
             axisLine={false}
@@ -83,6 +93,7 @@ export function UsageHistoryChart({ metricName, snapshots }: UsageHistoryChartPr
               color: "#d4d4d8",
             }}
             formatter={(value) => [`${value}%`, "Usage"]}
+            labelFormatter={(label) => formatDateTime(label)}
             labelStyle={{ color: "#71717a" }}
           />
           <ReferenceLine y={80} stroke="rgba(239,68,68,0.3)" strokeDasharray="3 3" />
