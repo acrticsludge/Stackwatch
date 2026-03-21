@@ -548,7 +548,7 @@ export function Hero() {
           </div>
 
           {/* ── Right: Product carousel ── */}
-          <div className="flex justify-center lg:justify-end">
+          <div className="hidden lg:flex justify-end">
             <HeroCarousel />
           </div>
         </div>
