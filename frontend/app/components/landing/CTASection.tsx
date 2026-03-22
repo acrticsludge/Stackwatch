@@ -8,7 +8,7 @@ export function CTASection() {
           Free to start
         </p>
         <h2 className="text-2xl font-bold text-white tracking-tight mb-3">
-          Know before your users do.
+          Never get surprised by usage limits again.
         </h2>
         <p className="text-zinc-500 text-base mb-8 max-w-md mx-auto">
           Connect GitHub, Vercel, Supabase, or Railway in under two minutes and

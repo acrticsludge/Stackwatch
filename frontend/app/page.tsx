@@ -11,6 +11,7 @@ import { PricingSection } from "@/app/components/landing/PricingSection";
 import { CTASection } from "@/app/components/landing/CTASection";
 import { FAQSection } from "@/app/components/landing/FAQSection";
 import { LandingFooter } from "@/app/components/landing/LandingFooter";
+import { ServicesStrip } from "@/app/components/landing/ServicesStrip";
 import { createClient } from "@/lib/supabase/server";
 import { getSession, getSubscription } from "@/lib/queries/user";
 
@@ -80,6 +81,7 @@ export default function LandingPage() {
       <main>
         {/* All sections below are fully static — rendered at build time */}
         <Hero />
+        <ServicesStrip />
         <ProblemSection />
         <HowItWorks />
         <ServicesSection />
