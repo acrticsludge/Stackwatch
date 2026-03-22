@@ -26,7 +26,7 @@ const FRAME_W = 560;
 const CHROME_H = 40;
 const CONTENT_H = 422;
 const FRAME_H = CHROME_H + CONTENT_H;
-const SCALE = 0.75;
+const SCALE = 0.82;
 
 // ─── DashCard ──────────────────────────────────────────────────────────────────
 interface DashMetric {
@@ -339,7 +339,7 @@ export function Hero() {
       />
 
       <div className="relative max-w-6xl mx-auto px-6">
-        <div className="grid lg:grid-cols-[1fr_420px] gap-12 xl:gap-20 items-center">
+        <div className="grid lg:grid-cols-[1fr_460px] gap-12 xl:gap-20 items-center">
           {/* ── Left: Copy ── */}
           <div className="max-w-xl">
             <p className="text-[11px] font-mono text-zinc-600 uppercase tracking-[0.18em] mb-8 flex items-center gap-2">
@@ -348,9 +348,9 @@ export function Hero() {
             </p>
 
             <h1 className="text-[3.25rem] md:text-[3.75rem] font-bold text-white tracking-tight leading-[1.06] mb-5">
-              Stop Finding Out
+              Catch usage limits
               <br />
-              <span className="text-zinc-500">When Your Users Do.</span>
+              <span className="text-zinc-500">before they break production.</span>
             </h1>
 
             <p className="text-base text-zinc-600 mb-2 leading-relaxed">
