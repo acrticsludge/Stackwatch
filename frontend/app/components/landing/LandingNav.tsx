@@ -43,12 +43,19 @@ export function LandingNav({ isLoggedIn = false }: LandingNavProps) {
         </a>
 
         <nav className="hidden md:flex items-center gap-1">
-          <a
-            href="/pricing"
-            className="text-sm text-zinc-500 hover:text-white transition-colors px-3 py-1.5 rounded-md hover:bg-white/[0.04]"
-          >
-            Pricing
-          </a>
+          {[
+            { href: "/#how-it-works", label: "How it works" },
+            { href: "/#features", label: "Features" },
+            { href: "/pricing", label: "Pricing" },
+          ].map((l) => (
+            <a
+              key={l.label}
+              href={l.href}
+              className="text-sm text-zinc-500 hover:text-white transition-colors px-3 py-1.5 rounded-md hover:bg-white/[0.04]"
+            >
+              {l.label}
+            </a>
+          ))}
         </nav>
 
         <div className="flex items-center gap-2">

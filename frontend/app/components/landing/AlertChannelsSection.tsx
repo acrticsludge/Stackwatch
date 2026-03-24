@@ -6,7 +6,7 @@ import { motion, useInView } from "framer-motion";
 const channels = [
   {
     name: "Email",
-    description: "Get notified the moment usage crosses your threshold.",
+    description: "Know about a quota spike before your build fails or your users notice.",
     iconBg: "bg-blue-500/10 border-blue-500/20",
     icon: (
       <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -16,7 +16,7 @@ const channels = [
   },
   {
     name: "Slack",
-    description: "Send alerts to any channel via incoming webhooks.",
+    description: "Your team sees the ping in the channel they're already watching — no one misses it.",
     iconBg: "bg-[#4A154B]/20 border-[#4A154B]/30",
     icon: (
       <svg className="h-5 w-5 text-[#E01E5A]" viewBox="0 0 24 24" fill="currentColor">
@@ -26,7 +26,7 @@ const channels = [
   },
   {
     name: "Discord",
-    description: "Post rich embeds to your Discord server.",
+    description: "Alert fires in Discord before anyone opens a support ticket.",
     iconBg: "bg-[#5865F2]/10 border-[#5865F2]/20",
     icon: (
       <svg className="h-5 w-5 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor">
@@ -36,7 +36,7 @@ const channels = [
   },
   {
     name: "Browser Push",
-    description: "Desktop notifications even when the tab is closed.",
+    description: "Catch it on a Saturday morning before it becomes a Monday morning incident.",
     iconBg: "bg-violet-500/10 border-violet-500/20",
     icon: (
       <svg className="h-5 w-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -51,7 +51,7 @@ export function AlertChannelsSection() {
   const isInView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    <section className="py-24 bg-[#0a0a0a] border-t border-white/4" ref={ref}>
+    <section id="features" className="py-24 bg-[#0a0a0a] border-t border-white/4" ref={ref}>
       <div className="max-w-5xl mx-auto px-6">
         <motion.div
           className="text-center mb-12"

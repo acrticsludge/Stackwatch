@@ -9,6 +9,7 @@ import { DemoWidget } from "@/app/components/landing/DemoWidget";
 import { AlertChannelsSection } from "@/app/components/landing/AlertChannelsSection";
 import { PricingSection } from "@/app/components/landing/PricingSection";
 import { CTASection } from "@/app/components/landing/CTASection";
+import { TestimonialsSection } from "@/app/components/landing/TestimonialsSection";
 import { FAQSection } from "@/app/components/landing/FAQSection";
 import { LandingFooter } from "@/app/components/landing/LandingFooter";
 import { ServicesStrip } from "@/app/components/landing/ServicesStrip";
@@ -97,7 +98,8 @@ export default function LandingPage() {
                 See it in action
               </h2>
               <p className="text-zinc-500 text-base max-w-xl mx-auto">
-                This is what your dashboard looks like. Explore freely — no strings attached.
+                This is what your dashboard looks like. Explore freely — no
+                strings attached.
               </p>
             </div>
             <DemoWidget />
@@ -105,6 +107,7 @@ export default function LandingPage() {
         </section>
 
         <AlertChannelsSection />
+
         <CTASection />
 
         {/* Pricing: streams in with isPro/userEmail; static fallback shows immediately */}
