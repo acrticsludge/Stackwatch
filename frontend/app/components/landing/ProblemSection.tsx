@@ -11,9 +11,9 @@ const problems = [
       </svg>
     ),
     iconBg: "bg-red-500/10 border-red-500/20",
-    title: "You find out when it breaks",
+    title: "Your users find out before you do",
     description:
-      "Actions quota runs out mid-sprint. Vercel bandwidth cuts off your users. Supabase row limit silently fails writes. Always at the worst time.",
+      "Actions quota runs out mid-deploy. Supabase silently fails writes. Vercel cuts off bandwidth during a launch. By the time you know, the damage is done — churn, support tickets, reputation.",
   },
   {
     icon: (
@@ -22,9 +22,9 @@ const problems = [
       </svg>
     ),
     iconBg: "bg-amber-500/10 border-amber-500/20",
-    title: "5 dashboards, zero early warnings",
+    title: "Hours a week just checking dashboards",
     description:
-      "GitHub, Vercel, Supabase, Railway — each has its own usage page. None of them alert you before the limit hits your users.",
+      "GitHub, Vercel, Supabase, Railway — each buried in its own billing page. Solo founders lose hours every month doing manual laps just to feel safe. None of them alert you before the wall.",
   },
   {
     icon: (
@@ -33,9 +33,9 @@ const problems = [
       </svg>
     ),
     iconBg: "bg-white/[0.05] border-white/[0.08]",
-    title: "Manual checking gets forgotten",
+    title: "The anxiety of not knowing",
     description:
-      "You check once, feel fine, and forget. Three weeks later usage has spiked and you're already over.",
+      "You checked last week and it was fine. But usage spiked over the weekend and you have no idea. That low-level dread of \"is something about to break?\" never fully goes away.",
   },
 ];
 
@@ -61,11 +61,10 @@ export function ProblemSection() {
             The problem
           </p>
           <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">
-            Sound familiar?
+            You&apos;re already running lean. One quota hit can unravel it.
           </h2>
           <p className="text-zinc-500 text-base max-w-md mx-auto">
-            Early-stage SaaS teams in production can&apos;t afford to find out
-            about a limit when a user hits it.
+            Solo founders and small teams can&apos;t afford a production meltdown. The platforms you rely on don&apos;t warn you — they just stop working.
           </p>
         </motion.div>
 
