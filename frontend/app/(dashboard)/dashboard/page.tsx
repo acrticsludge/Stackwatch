@@ -124,9 +124,8 @@ async function DashboardBody() {
 
 async function UsageContent({ integrations }: { integrations: Integration[] }) {
   const supabase = await createClient();
-  const integrationIds = activeIntegrations.map((i) => i.id);
+  const integrationIds = integrations.map((i) => i.id);
 
-  // subscription is served from cache (shared with layout — zero extra DB hit)
   const [subscription, { data: snapshots }] = await Promise.all([
     getSubscription(),
     supabase
@@ -185,7 +184,7 @@ async function UsageContent({ integrations }: { integrations: Integration[] }) {
 
   return (
     <>
-      {/* Status summary */}
+      {/* Status Summary */}
       {aggregateSnapshots.length > 0 && (
         <div className="grid grid-cols-3 gap-3 mb-8">
           <div className="bg-[#111] border border-white/6 rounded-xl px-4 py-3.5">
