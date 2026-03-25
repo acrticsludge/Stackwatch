@@ -71,6 +71,7 @@ async function SettingsData({
       tier={subscription?.tier ?? "free"}
       subscriptionStatus={subscription?.status ?? null}
       trialEndsAt={subscription?.trial_ends_at ?? null}
+      nextBillingAt={subscription?.next_billing_at ?? null}
       defaultTab={tab ?? "alerts"}
     />
   );

@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
   const dodoCustomerId = customer?.customer_id as string | undefined;
   const productId = data.product_id as string | undefined;
   const metadata = data.metadata as Record<string, string> | undefined;
+  const nextBillingDate = data.next_billing_date as string | undefined;
 
   // Prefer user_id from checkout metadata (fast, reliable)
   // Fall back to email lookup for webhooks triggered outside our checkout flow
@@ -59,20 +60,21 @@ export async function POST(req: NextRequest) {
 
   switch (type) {
     case "subscription.active": {
-      // Fires on both initial subscription creation AND trial-to-paid conversion.
-      // status === "pending" means a trial just started; "active" means paid/converted.
-      const dodoStatus = data.status as string | undefined;
-      const isPending = dodoStatus === "pending";
-      const trialEndsAt = isPending
-        ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+      // Dodo always sends status:"active" — detect trial via trial_period_days > 0.
+      // trial-to-paid conversion is handled by subscription.renewed below.
+      const trialPeriodDays = data.trial_period_days as number | undefined;
+      const isTrial = typeof trialPeriodDays === "number" && trialPeriodDays > 0;
+      const trialEndsAt = isTrial
+        ? new Date(Date.now() + trialPeriodDays * 24 * 60 * 60 * 1000).toISOString()
         : null;
 
       await supabase.from("subscriptions").upsert(
         {
           user_id: userId,
           tier: "pro",
-          status: isPending ? "trialing" : "active",
+          status: isTrial ? "trialing" : "active",
           trial_ends_at: trialEndsAt,
+          next_billing_at: nextBillingDate ?? null,
           dodo_subscription_id: dodoSubscriptionId,
           dodo_customer_id: dodoCustomerId,
           dodo_product_id: productId,
@@ -85,9 +87,11 @@ export async function POST(req: NextRequest) {
 
     case "subscription.updated": {
       const status = data.status as string;
+      const trialPeriodDays = data.trial_period_days as number | undefined;
+      const isTrial = typeof trialPeriodDays === "number" && trialPeriodDays > 0;
       const mappedStatus =
-        status === "active" ? "active"
-        : status === "pending" ? "trialing"
+        status === "active" && isTrial ? "trialing"
+        : status === "active" ? "active"
         : status === "on_hold" || status === "failed" ? "past_due"
         : "cancelled";
       await supabase
@@ -106,6 +110,7 @@ export async function POST(req: NextRequest) {
         .update({
           status: "active",
           tier: "pro",
+          next_billing_at: nextBillingDate ?? null,
           updated_at: new Date().toISOString(),
         })
         .eq("dodo_subscription_id", dodoSubscriptionId);

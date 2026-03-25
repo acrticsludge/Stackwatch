@@ -158,6 +158,7 @@ interface SettingsContentProps {
   tier: string;
   subscriptionStatus?: string | null;
   trialEndsAt?: string | null;
+  nextBillingAt?: string | null;
   defaultTab?: string;
 }
 
@@ -207,6 +208,7 @@ export function SettingsContent({
   tier,
   subscriptionStatus,
   trialEndsAt,
+  nextBillingAt,
   defaultTab = "alerts",
 }: SettingsContentProps) {
   const isPro = tier === "pro" || tier === "team";
@@ -699,6 +701,20 @@ export function SettingsContent({
                     year: "numeric",
                   })}
                   . You&apos;ll be charged $10/mo after unless you cancel.
+                </p>
+              )}
+            </div>
+          ) : isPro ? (
+            <div className="mb-5">
+              <p className="text-sm font-medium text-white capitalize mb-1">{tier}</p>
+              {nextBillingAt && (
+                <p className="text-zinc-500 text-xs">
+                  Next payment on{" "}
+                  {new Date(nextBillingAt).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
                 </p>
               )}
             </div>
