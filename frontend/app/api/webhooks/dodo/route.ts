@@ -98,12 +98,16 @@ export async function POST(req: NextRequest) {
         : status === "active" ? "active"
         : status === "on_hold" || status === "failed" ? "past_due"
         : "canceled";
+      const updatePayload: Record<string, unknown> = {
+        status: mappedStatus,
+        updated_at: new Date().toISOString(),
+      };
+      if (mappedStatus === "active" || mappedStatus === "trialing") {
+        updatePayload.past_due_since = null;
+      }
       await supabase
         .from("subscriptions")
-        .update({
-          status: mappedStatus,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("dodo_subscription_id", dodoSubscriptionId);
       break;
     }
@@ -115,6 +119,7 @@ export async function POST(req: NextRequest) {
           status: "active",
           tier: "pro",
           next_billing_at: nextBillingDate ?? null,
+          past_due_since: null,
           updated_at: new Date().toISOString(),
         })
         .eq("dodo_subscription_id", dodoSubscriptionId);
@@ -124,13 +129,17 @@ export async function POST(req: NextRequest) {
     case "subscription.on_hold":
     case "subscription.failed":
     case "payment.failed": {
+      const now = new Date().toISOString();
       await supabase
         .from("subscriptions")
-        .update({
-          status: "past_due",
-          updated_at: new Date().toISOString(),
-        })
+        .update({ status: "past_due", updated_at: now })
         .eq("dodo_subscription_id", dodoSubscriptionId);
+      // Only stamp past_due_since on the first occurrence — retries must not reset the clock.
+      await supabase
+        .from("subscriptions")
+        .update({ past_due_since: now })
+        .eq("dodo_subscription_id", dodoSubscriptionId)
+        .is("past_due_since", null);
       break;
     }
 

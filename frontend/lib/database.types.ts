@@ -159,6 +159,7 @@ export type Database = {
           trial_ends_at: string | null;
           next_billing_at: string | null;
           cancel_at_period_end: boolean;
+          past_due_since: string | null;
           created_at: string;
           updated_at: string;
           dodo_subscription_id: string | null;
@@ -173,6 +174,7 @@ export type Database = {
           trial_ends_at?: string | null;
           next_billing_at?: string | null;
           cancel_at_period_end?: boolean;
+          past_due_since?: string | null;
           created_at?: string;
           updated_at?: string;
           dodo_subscription_id?: string | null;
@@ -187,6 +189,7 @@ export type Database = {
           trial_ends_at?: string | null;
           next_billing_at?: string | null;
           cancel_at_period_end?: boolean;
+          past_due_since?: string | null;
           created_at?: string;
           updated_at?: string;
           dodo_subscription_id?: string | null;

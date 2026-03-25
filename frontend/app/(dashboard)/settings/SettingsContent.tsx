@@ -215,6 +215,7 @@ export function SettingsContent({
 }: SettingsContentProps) {
   const isPro = tier === "pro" || tier === "team";
   const isTrialing = subscriptionStatus === "trialing";
+  const isPastDue = subscriptionStatus === "past_due";
   const router = useRouter();
   const { toast } = useToast();
 
@@ -707,6 +708,18 @@ export function SettingsContent({
                 </p>
               )}
             </div>
+          ) : isPastDue ? (
+            <div className="mb-5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-sm font-medium text-white capitalize">{tier}</span>
+                <span className="text-[10px] font-semibold text-red-400 bg-red-500/10 border border-red-500/20 rounded-full px-2 py-0.5 uppercase tracking-wide">
+                  Payment failed
+                </span>
+              </div>
+              <p className="text-zinc-500 text-xs">
+                Your last payment didn't go through. Update your payment method to keep Pro access.
+              </p>
+            </div>
           ) : isPro ? (
             <div className="mb-5">
               <div className="flex items-center gap-2 mb-1">
@@ -738,7 +751,14 @@ export function SettingsContent({
             <p className="text-zinc-500 text-sm mb-5 capitalize">{tier}</p>
           )}
 
-          {!isPro && !isTrialing ? (
+          {isPastDue ? (
+            <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4">
+              <p className="text-sm text-zinc-300 mb-3">
+                To restore Pro access, start a new subscription below.
+              </p>
+              <UpgradeButton />
+            </div>
+          ) : !isPro && !isTrialing ? (
             <div>
               <p className="text-zinc-400 text-sm mb-4">
                 Upgrade to Pro for multiple accounts, Slack &amp; Discord alerts, 5-minute polling, and 30-day history.
