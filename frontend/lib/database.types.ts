@@ -152,7 +152,8 @@ export type Database = {
           id: string;
           user_id: string;
           tier: "free" | "pro" | "team";
-          status: "active" | "canceled" | "past_due";
+          status: "active" | "trialing" | "past_due" | "cancelled" | "canceled";
+          trial_ends_at: string | null;
           created_at: string;
           updated_at: string;
           dodo_subscription_id: string | null;
@@ -163,7 +164,8 @@ export type Database = {
           id?: string;
           user_id: string;
           tier?: "free" | "pro" | "team";
-          status?: "active" | "canceled" | "past_due";
+          status?: "active" | "trialing" | "past_due" | "cancelled" | "canceled";
+          trial_ends_at?: string | null;
           created_at?: string;
           updated_at?: string;
           dodo_subscription_id?: string | null;
@@ -174,7 +176,8 @@ export type Database = {
           id?: string;
           user_id?: string;
           tier?: "free" | "pro" | "team";
-          status?: "active" | "canceled" | "past_due";
+          status?: "active" | "trialing" | "past_due" | "cancelled" | "canceled";
+          trial_ends_at?: string | null;
           created_at?: string;
           updated_at?: string;
           dodo_subscription_id?: string | null;
