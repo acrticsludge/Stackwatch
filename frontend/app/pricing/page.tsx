@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LandingNav } from "@/app/components/landing/LandingNav";
-import { PricingSection } from "@/app/components/landing/PricingSection";
+import { PricingSection, type PlanState } from "@/app/components/landing/PricingSection";
 import { LandingFooter } from "@/app/components/landing/LandingFooter";
 import { createClient } from "@/lib/supabase/server";
 
@@ -18,16 +18,29 @@ export default async function PricingPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: subscription } = user
-    ? await supabase
-        .from("subscriptions")
-        .select("tier")
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .maybeSingle()
-    : { data: null };
+  let planState: PlanState = "none";
 
-  const isPro = subscription?.tier === "pro" || subscription?.tier === "team";
+  if (user) {
+    const { data: sub } = await supabase
+      .from("subscriptions")
+      .select("tier, status, cancel_at_period_end")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (sub) {
+      if (sub.status === "trialing") {
+        planState = "trialing";
+      } else if (sub.status === "active" && (sub.tier === "pro" || sub.tier === "team")) {
+        planState = sub.cancel_at_period_end ? "active_cancelling" : "active";
+      } else if (sub.status === "past_due") {
+        planState = "past_due";
+      } else {
+        planState = "used_trial";
+      }
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
@@ -45,7 +58,7 @@ export default async function PricingPage() {
             team features.
           </p>
         </div>
-        <PricingSection userEmail={user?.email} isPro={isPro} />
+        <PricingSection userEmail={user?.email} planState={planState} />
       </main>
       <LandingFooter />
     </div>

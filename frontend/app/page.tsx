@@ -7,14 +7,14 @@ import { HowItWorks } from "@/app/components/landing/HowItWorks";
 import { ServicesSection } from "@/app/components/landing/ServicesSection";
 import { DemoWidget } from "@/app/components/landing/DemoWidget";
 import { AlertChannelsSection } from "@/app/components/landing/AlertChannelsSection";
-import { PricingSection } from "@/app/components/landing/PricingSection";
+import { PricingSection, type PlanState } from "@/app/components/landing/PricingSection";
 import { CTASection } from "@/app/components/landing/CTASection";
 import { TestimonialsSection } from "@/app/components/landing/TestimonialsSection";
 import { FAQSection } from "@/app/components/landing/FAQSection";
 import { LandingFooter } from "@/app/components/landing/LandingFooter";
 import { ServicesStrip } from "@/app/components/landing/ServicesStrip";
 import { createClient } from "@/lib/supabase/server";
-import { getSession, getSubscription } from "@/lib/queries/user";
+import { getSession } from "@/lib/queries/user";
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://stackwatch.pulsemonitor.dev";
@@ -59,9 +59,31 @@ async function DynamicNav() {
 
 async function DynamicPricingSection() {
   const session = await getSession();
-  const sub = session ? await getSubscription() : null;
-  const isPro = sub?.tier === "pro" || sub?.tier === "team";
-  return <PricingSection userEmail={session?.user?.email} isPro={isPro} />;
+  let planState: PlanState = "none";
+
+  if (session) {
+    const supabase = await createClient();
+    const { data: sub } = await supabase
+      .from("subscriptions")
+      .select("tier, status, cancel_at_period_end")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (sub) {
+      if (sub.status === "trialing") {
+        planState = "trialing";
+      } else if (sub.status === "active" && (sub.tier === "pro" || sub.tier === "team")) {
+        planState = sub.cancel_at_period_end ? "active_cancelling" : "active";
+      } else if (sub.status === "past_due") {
+        planState = "past_due";
+      } else {
+        planState = "used_trial";
+      }
+    }
+  }
+
+  return <PricingSection userEmail={session?.user?.email} planState={planState} />;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────

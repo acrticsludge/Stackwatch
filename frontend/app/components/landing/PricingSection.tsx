@@ -4,6 +4,14 @@ import { useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
 import { useRouter } from "next/navigation";
 
+export type PlanState =
+  | "none"           // no subscription ever — eligible for trial
+  | "trialing"       // currently in trial
+  | "active"         // active pro
+  | "active_cancelling" // active but cancel_at_period_end = true
+  | "past_due"       // payment failed
+  | "used_trial";    // cancelled/lapsed — trial already consumed
+
 const PROMO_CODE = "ST62D62ISFG";
 
 function PromoReveal() {
@@ -86,13 +94,18 @@ function PromoReveal() {
 
 export function PricingSection({
   userEmail,
-  isPro,
+  planState = "none",
 }: {
   userEmail?: string;
-  isPro?: boolean;
+  planState?: PlanState;
 }) {
   const router = useRouter();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  const isProActive =
+    planState === "active" ||
+    planState === "active_cancelling" ||
+    planState === "trialing";
 
   async function handleProCheckout() {
     if (!userEmail) {
@@ -119,8 +132,8 @@ export function PricingSection({
         "15-minute polling",
         "7-day alert history",
       ],
-      cta: "Get started free",
-      href: "/signup",
+      cta: userEmail ? "Go to dashboard" : "Get started free",
+      href: userEmail ? "/dashboard" : "/signup",
       highlight: false,
     },
     {
@@ -239,7 +252,7 @@ export function PricingSection({
                     <span className="text-sm text-zinc-600">{p.period}</span>
                   )}
                 </div>
-                {p.highlight && (
+                {p.highlight && planState === "none" && (
                   <p className="text-xs text-emerald-400 mt-1 font-medium">
                     14-day free trial included
                   </p>
@@ -280,25 +293,36 @@ export function PricingSection({
                 ))}
               </ul>
 
-              {p.highlight && !isPro && <PromoReveal />}
+              {p.highlight && !isProActive && planState !== "past_due" && (
+                <PromoReveal />
+              )}
 
-              {("comingSoon" in p && p.comingSoon) || (p.highlight && isPro) ? (
-                <div
-                  className={`flex w-full items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium cursor-not-allowed opacity-50 ${
-                    p.highlight
-                      ? "bg-blue-500 text-white"
-                      : "bg-white/6 text-zinc-300"
-                  }`}
-                >
-                  {p.highlight && isPro ? "Current plan" : p.cta}
+              {"comingSoon" in p && p.comingSoon ? (
+                <div className="flex w-full items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium cursor-not-allowed opacity-50 bg-white/6 text-zinc-300">
+                  {p.cta}
                 </div>
+              ) : p.highlight && isProActive ? (
+                <div className="flex w-full items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium cursor-not-allowed opacity-50 bg-blue-500 text-white">
+                  {planState === "trialing" ? "In trial" : "Current plan"}
+                </div>
+              ) : p.highlight && planState === "past_due" ? (
+                <a
+                  href="/settings?tab=billing"
+                  className="flex w-full items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium transition-all bg-amber-500 hover:bg-amber-400 text-white"
+                >
+                  Update payment
+                </a>
               ) : p.highlight ? (
                 <button
                   onClick={handleProCheckout}
                   disabled={checkoutLoading}
                   className="flex w-full items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium transition-all bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 disabled:opacity-50"
                 >
-                  {checkoutLoading ? "Loading..." : p.cta}
+                  {checkoutLoading
+                    ? "Loading..."
+                    : planState === "used_trial"
+                      ? "Upgrade to Pro"
+                      : "Start free trial"}
                 </button>
               ) : (
                 <a
