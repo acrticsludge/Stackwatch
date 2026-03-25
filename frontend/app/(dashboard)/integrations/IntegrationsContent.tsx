@@ -14,7 +14,7 @@ import {
   DialogFooter,
 } from "@/app/components/ui/dialog";
 import { useToast } from "@/app/components/ui/use-toast";
-import { Plus, Trash2, AlertCircle, Pencil, ArrowUpCircle } from "lucide-react";
+import { Plus, Trash2, AlertCircle, Pencil, ArrowUpCircle, BookOpen } from "lucide-react";
 
 interface Integration {
   id: string;
@@ -32,6 +32,8 @@ interface IntegrationsContentProps {
   tier: string;
 }
 
+const WIKI_BASE = "https://github.com/acrticsludge/Stackwatch/wiki";
+
 const SERVICES = [
   {
     id: "github",
@@ -39,6 +41,7 @@ const SERVICES = [
     description: "Track Actions minutes vs monthly limit.",
     caveat:
       "Requires GitHub's legacy billing system. Personal accounts on the new billing platform and most accounts created after 2023 are not supported — the API returns no data.",
+    wikiUrl: `${WIKI_BASE}/Connecting-GitHub-Actions`,
     fields: [
       {
         key: "api_key",
@@ -61,6 +64,7 @@ const SERVICES = [
     description: "Monitor bandwidth, build minutes, and function invocations.",
     caveat:
       "Hobby plan accounts are not supported — Vercel does not expose billing data via API for Hobby. Pro or Team plan required.",
+    wikiUrl: `${WIKI_BASE}/Connecting-Vercel`,
     fields: [
       {
         key: "api_key",
@@ -82,6 +86,7 @@ const SERVICES = [
     name: "Supabase",
     description: "Watch database size, storage, and monthly active users.",
     caveat: null,
+    wikiUrl: `${WIKI_BASE}/Connecting-Supabase`,
     fields: [
       {
         key: "api_key",
@@ -112,6 +117,7 @@ const SERVICES = [
       "Monitor memory and CPU usage across all your Railway projects and services.",
     caveat:
       "Usage data requires at least one deployed service. Free tier tracks memory (512 MB/service) and CPU across all projects.",
+    wikiUrl: `${WIKI_BASE}/Connecting-Railway`,
     fields: [
       {
         key: "api_key",
@@ -262,9 +268,20 @@ export function IntegrationsContent({
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1 min-w-0 mr-4">
-                <h2 className="font-semibold text-white mb-0.5 text-sm">
-                  {svc.name}
-                </h2>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h2 className="font-semibold text-white text-sm">
+                    {svc.name}
+                  </h2>
+                  <a
+                    href={svc.wikiUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="How to connect — open wiki"
+                    className="text-zinc-600 hover:text-zinc-300 transition-colors"
+                  >
+                    <BookOpen className="h-3.5 w-3.5" />
+                  </a>
+                </div>
                 <p className="text-sm text-zinc-600">{svc.description}</p>
                 {svc.caveat && (
                   <p className="text-xs text-amber-500/80 mt-1.5">
@@ -465,7 +482,18 @@ export function IntegrationsContent({
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Connect {svc.name}</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                Connect {svc.name}
+                <a
+                  href={svc.wikiUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Setup guide — open wiki"
+                  className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  <BookOpen className="h-4 w-4" />
+                </a>
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-2">
               {svc.fields.map((field) => (
