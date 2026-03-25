@@ -72,6 +72,7 @@ async function SettingsData({
       subscriptionStatus={subscription?.status ?? null}
       trialEndsAt={subscription?.trial_ends_at ?? null}
       nextBillingAt={subscription?.next_billing_at ?? null}
+      cancelAtPeriodEnd={subscription?.cancel_at_period_end ?? false}
       defaultTab={tab ?? "alerts"}
     />
   );

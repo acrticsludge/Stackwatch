@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { dodo } from "@/lib/dodo";
 
 export async function POST() {
@@ -17,7 +18,7 @@ export async function POST() {
     .from("subscriptions")
     .select("dodo_subscription_id")
     .eq("user_id", user.id)
-    .eq("status", "active")
+    .in("status", ["active", "trialing"])
     .maybeSingle();
 
   if (!subscription?.dodo_subscription_id) {
@@ -31,8 +32,15 @@ export async function POST() {
     await dodo.subscriptions.update(subscription.dodo_subscription_id, {
       cancel_at_next_billing_date: true,
     });
-    // Don't downgrade locally — the webhook fires at end of billing period
-    // and handles the tier/status update then.
+
+    // Mark locally so the UI can show "access until [date]" immediately.
+    // The webhook fires at period end and handles the actual tier downgrade.
+    const serviceClient = createServiceClient();
+    await serviceClient
+      .from("subscriptions")
+      .update({ cancel_at_period_end: true, updated_at: new Date().toISOString() })
+      .eq("user_id", user.id);
+
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("[cancel] failed:", err);

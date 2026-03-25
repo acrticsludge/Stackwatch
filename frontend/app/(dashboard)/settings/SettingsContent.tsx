@@ -159,6 +159,7 @@ interface SettingsContentProps {
   subscriptionStatus?: string | null;
   trialEndsAt?: string | null;
   nextBillingAt?: string | null;
+  cancelAtPeriodEnd?: boolean;
   defaultTab?: string;
 }
 
@@ -209,6 +210,7 @@ export function SettingsContent({
   subscriptionStatus,
   trialEndsAt,
   nextBillingAt,
+  cancelAtPeriodEnd = false,
   defaultTab = "alerts",
 }: SettingsContentProps) {
   const isPro = tier === "pro" || tier === "team";
@@ -691,23 +693,37 @@ export function SettingsContent({
                 <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5 uppercase tracking-wide">
                   Free trial
                 </span>
+                {cancelAtPeriodEnd && (
+                  <span className="text-[10px] font-semibold text-zinc-500 bg-white/5 border border-white/10 rounded-full px-2 py-0.5 uppercase tracking-wide">
+                    Cancelling
+                  </span>
+                )}
               </div>
               {trialEndsAt && (
                 <p className="text-zinc-500 text-xs">
-                  Trial ends{" "}
-                  {new Date(trialEndsAt).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                  . You&apos;ll be charged $10/mo after unless you cancel.
+                  {cancelAtPeriodEnd
+                    ? `Trial ends ${new Date(trialEndsAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}. No charge will be made.`
+                    : `Trial ends ${new Date(trialEndsAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}. You'll be charged $10/mo after unless you cancel.`}
                 </p>
               )}
             </div>
           ) : isPro ? (
             <div className="mb-5">
-              <p className="text-sm font-medium text-white capitalize mb-1">{tier}</p>
-              {nextBillingAt && (
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-sm font-medium text-white capitalize">{tier}</p>
+                {cancelAtPeriodEnd && (
+                  <span className="text-[10px] font-semibold text-zinc-500 bg-white/5 border border-white/10 rounded-full px-2 py-0.5 uppercase tracking-wide">
+                    Cancelling
+                  </span>
+                )}
+              </div>
+              {cancelAtPeriodEnd ? (
+                <p className="text-zinc-500 text-xs">
+                  {nextBillingAt
+                    ? `Pro access continues until ${new Date(nextBillingAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}. No further charges.`
+                    : "Your subscription won't renew. Pro access continues until the end of your billing period."}
+                </p>
+              ) : nextBillingAt ? (
                 <p className="text-zinc-500 text-xs">
                   Next payment on{" "}
                   {new Date(nextBillingAt).toLocaleDateString("en-US", {
@@ -716,7 +732,7 @@ export function SettingsContent({
                     year: "numeric",
                   })}
                 </p>
-              )}
+              ) : null}
             </div>
           ) : (
             <p className="text-zinc-500 text-sm mb-5 capitalize">{tier}</p>
@@ -729,6 +745,10 @@ export function SettingsContent({
               </p>
               <UpgradeButton />
             </div>
+          ) : cancelAtPeriodEnd ? (
+            <p className="text-sm text-zinc-600">
+              Your cancellation is scheduled. You can reactivate anytime before your access expires.
+            </p>
           ) : (
             <div className="space-y-5">
               {!isTrialing && <ManagePortalButton />}

@@ -158,6 +158,7 @@ export type Database = {
           status: "active" | "trialing" | "past_due" | "cancelled" | "canceled";
           trial_ends_at: string | null;
           next_billing_at: string | null;
+          cancel_at_period_end: boolean;
           created_at: string;
           updated_at: string;
           dodo_subscription_id: string | null;
@@ -171,6 +172,7 @@ export type Database = {
           status?: "active" | "trialing" | "past_due" | "cancelled" | "canceled";
           trial_ends_at?: string | null;
           next_billing_at?: string | null;
+          cancel_at_period_end?: boolean;
           created_at?: string;
           updated_at?: string;
           dodo_subscription_id?: string | null;
@@ -184,6 +186,7 @@ export type Database = {
           status?: "active" | "trialing" | "past_due" | "cancelled" | "canceled";
           trial_ends_at?: string | null;
           next_billing_at?: string | null;
+          cancel_at_period_end?: boolean;
           created_at?: string;
           updated_at?: string;
           dodo_subscription_id?: string | null;

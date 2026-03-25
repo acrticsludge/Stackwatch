@@ -141,6 +141,7 @@ export async function POST(req: NextRequest) {
         .update({
           status: "canceled",
           tier: "free",
+          cancel_at_period_end: false,
           updated_at: new Date().toISOString(),
         })
         .eq("dodo_subscription_id", dodoSubscriptionId);
