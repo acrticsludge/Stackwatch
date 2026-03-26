@@ -4,12 +4,12 @@ import { LandingFooter } from "@/app/components/landing/LandingFooter";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Stackwatch",
+  title: "Privacy Policy",
   description:
-    "How Stackwatch collects, uses, and protects your personal data.",
+    "How Stackwatch collects, uses, and protects your personal data. Covers API key encryption, data retention, your rights under DPDP Act 2023, and how to contact our Grievance Officer.",
   alternates: { canonical: "/privacy" },
   openGraph: { url: "/privacy" },
-  robots: { index: true, follow: false },
+  robots: { index: true, follow: true },
 };
 
 export default async function PrivacyPage() {

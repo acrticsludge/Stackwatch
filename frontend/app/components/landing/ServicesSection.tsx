@@ -6,7 +6,7 @@ import { motion, useInView } from "framer-motion";
 const services = [
   {
     name: "GitHub Actions",
-    description: "Minutes used · Per-repo breakdown",
+    description: "Track CI minutes used vs your monthly limit, broken down per repo. Get alerted before builds start failing.",
     accent: "group-hover:border-zinc-600/60",
     logo: (
       <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-zinc-200">
@@ -16,7 +16,7 @@ const services = [
   },
   {
     name: "Vercel",
-    description: "Bandwidth · Build minutes · Functions",
+    description: "Monitor bandwidth, build minutes, and function invocations against your plan limits. Know before a deploy gets cut off.",
     accent: "group-hover:border-zinc-600/60",
     logo: (
       <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-zinc-200">
@@ -26,7 +26,7 @@ const services = [
   },
   {
     name: "Supabase",
-    description: "DB size · Rows · Storage · MAU",
+    description: "Watch database size, row count, storage, and monthly active users. Catch free-tier overages before writes silently fail.",
     accent: "group-hover:border-emerald-500/30",
     logo: (
       <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-emerald-400">
@@ -36,7 +36,7 @@ const services = [
   },
   {
     name: "Railway",
-    description: "Memory usage · CPU across services",
+    description: "Track memory and CPU usage across Railway services. Spot runaway processes before they crash your worker or rack up costs.",
     accent: "group-hover:border-zinc-600/60",
     logo: (
       <svg viewBox="0 0 1024 1024" fill="currentColor" className="h-5 w-5 text-zinc-200">

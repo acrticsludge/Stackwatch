@@ -3,44 +3,23 @@ import type { MetadataRoute } from "next";
 export default function sitemap(): MetadataRoute.Sitemap {
   const base =
     process.env.NEXT_PUBLIC_APP_URL ?? "https://stackwatch.pulsemonitor.dev";
-  const now = new Date();
 
   return [
     {
       url: base,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 1,
+      lastModified: "2026-03-26",
     },
     {
       url: `${base}/pricing`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${base}/login`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-    {
-      url: `${base}/signup`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.6,
+      lastModified: "2026-03-26",
     },
     {
       url: `${base}/privacy`,
-      lastModified: now,
-      changeFrequency: "yearly",
-      priority: 0.3,
+      lastModified: "2026-03-16",
     },
     {
       url: `${base}/terms`,
-      lastModified: now,
-      changeFrequency: "yearly",
-      priority: 0.3,
+      lastModified: "2026-03-16",
     },
   ];
 }

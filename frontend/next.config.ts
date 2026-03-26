@@ -5,6 +5,18 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  {
+    key: "Content-Security-Policy-Report-Only",
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.clarity.ms",
+      "connect-src 'self' https://clarity.microsoft.com https://www.google-analytics.com",
+      "img-src 'self' data: https://avatars.githubusercontent.com",
+      "font-src 'self'",
+      "style-src 'self' 'unsafe-inline'",
+      "frame-ancestors 'none'",
+    ].join("; "),
+  },
 ];
 
 const nextConfig: NextConfig = {

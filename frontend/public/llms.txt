@@ -1,0 +1,42 @@
+# Stackwatch
+
+Stackwatch is a usage monitoring platform for developer teams. It connects to GitHub Actions, Vercel, Supabase, and Railway via API tokens, continuously polls usage metrics, and alerts users when usage approaches configurable thresholds — before limits cause production incidents.
+
+## What it monitors
+
+- **GitHub Actions**: minutes used vs monthly limit, broken down per repo
+- **Vercel**: bandwidth, build minutes, function invocations vs plan limits
+- **Supabase**: database size, row count, storage, monthly active users vs free tier limits
+- **Railway**: memory and CPU usage per service
+
+## Polling intervals
+
+- Free plan: every 15 minutes
+- Pro plan: every 5 minutes
+- Team plan: every 1 minute
+
+## Alert channels
+
+- Email (all plans)
+- Slack webhook (Pro and Team)
+- Discord webhook (Pro and Team)
+- Browser push notifications (Pro and Team)
+
+Each alert includes: service name, metric name, current value, plan limit, percentage used, and timestamp. Stackwatch will not re-alert on the same metric until usage drops below the threshold and crosses it again.
+
+## Plans
+
+- **Free** — $0/month. 1 account per service, email alerts, 15-minute polling, 7-day usage history.
+- **Pro** — $10/month. 5 accounts per service, all alert channels, 5-minute polling, 30-day history, usage history charts.
+- **Team** — $30/month. Unlimited accounts, all alert channels, 1-minute polling, 90-day history, shared team dashboard for invited members.
+
+## Security
+
+API tokens are encrypted with AES-256 at rest. The encryption key is never stored alongside the data. Row Level Security is enforced on all database tables — users can only access their own data.
+
+## Links
+
+- Homepage: https://stackwatch.pulsemonitor.dev
+- Pricing: https://stackwatch.pulsemonitor.dev/pricing
+- Privacy Policy: https://stackwatch.pulsemonitor.dev/privacy
+- Terms of Service: https://stackwatch.pulsemonitor.dev/terms

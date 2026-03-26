@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     description: DEFAULT_DESCRIPTION,
     images: [
       {
-        url: "/og.png",
+        url: "/og",
         width: 1200,
         height: 630,
         alt: "Stackwatch — Monitor your dev stack limits",
@@ -50,12 +50,22 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
-    images: ["/og.png"],
+    images: ["/og"],
   },
   robots: {
     index: true,
     follow: true,
   },
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "@id": `${APP_URL}/#website`,
+  name: "Stackwatch",
+  url: APP_URL,
+  description: DEFAULT_DESCRIPTION,
+  publisher: { "@id": `${APP_URL}/#organization` },
 };
 
 export default function RootLayout({
@@ -66,6 +76,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body className="min-h-screen bg-background font-sans antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
         {children}
         <Toaster />
         <Analytics />

@@ -5,9 +5,9 @@ import { LandingFooter } from "@/app/components/landing/LandingFooter";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Pricing — Stackwatch",
+  title: "Pricing Plans",
   description:
-    "Simple, transparent pricing. Start free and upgrade when you need more services, faster polling, or team collaboration.",
+    "Stackwatch pricing: Free ($0), Pro ($10/mo), Team ($30/mo). Free plan includes 1 account per service and email alerts. Pro adds Slack, Discord, and 5-minute polling. No credit card required to start.",
   alternates: { canonical: "/pricing" },
   openGraph: { url: "/pricing" },
 };
@@ -51,7 +51,7 @@ export default async function PricingPage() {
             Pricing
           </p>
           <h1 className="text-3xl font-bold text-white mb-3 tracking-tight">
-            Simple, transparent pricing
+            Choose your plan
           </h1>
           <p className="text-zinc-500 text-base max-w-md mx-auto">
             Start free. Upgrade when you need more accounts, faster polling, or

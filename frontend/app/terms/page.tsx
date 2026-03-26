@@ -4,11 +4,12 @@ import { LandingFooter } from "@/app/components/landing/LandingFooter";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Stackwatch",
-  description: "Terms and conditions for using Stackwatch.",
+  title: "Terms of Service",
+  description:
+    "Terms and conditions for using Stackwatch. Covers acceptable use, payment terms, data handling, warranties, limitation of liability, and how to cancel your subscription.",
   alternates: { canonical: "/terms" },
   openGraph: { url: "/terms" },
-  robots: { index: true, follow: false },
+  robots: { index: true, follow: true },
 };
 
 export default async function TermsPage() {

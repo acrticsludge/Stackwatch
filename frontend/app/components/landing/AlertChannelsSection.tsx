@@ -6,7 +6,7 @@ import { motion, useInView } from "framer-motion";
 const channels = [
   {
     name: "Email",
-    description: "Know about a quota spike before your build fails or your users notice.",
+    description: "Structured alert email with service, metric, current value, limit, and % used. Lands in your inbox before the build queue backs up.",
     iconBg: "bg-blue-500/10 border-blue-500/20",
     icon: (
       <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -16,7 +16,7 @@ const channels = [
   },
   {
     name: "Slack",
-    description: "Your team sees the ping in the channel they're already watching — no one misses it.",
+    description: "Posts a formatted message to any channel via incoming webhook. Paste your webhook URL in Settings — no Slack app approval required.",
     iconBg: "bg-[#4A154B]/20 border-[#4A154B]/30",
     icon: (
       <svg className="h-5 w-5 text-[#E01E5A]" viewBox="0 0 24 24" fill="currentColor">
@@ -26,7 +26,7 @@ const channels = [
   },
   {
     name: "Discord",
-    description: "Alert fires in Discord before anyone opens a support ticket.",
+    description: "Same structured alert via Discord webhook. Works with any server and channel — just paste the webhook URL and save.",
     iconBg: "bg-[#5865F2]/10 border-[#5865F2]/20",
     icon: (
       <svg className="h-5 w-5 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor">
@@ -36,7 +36,7 @@ const channels = [
   },
   {
     name: "Browser Push",
-    description: "Catch it on a Saturday morning before it becomes a Monday morning incident.",
+    description: "Native OS notifications even when the dashboard isn't open. Enable once in Settings — no app install needed.",
     iconBg: "bg-violet-500/10 border-violet-500/20",
     icon: (
       <svg className="h-5 w-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -66,7 +66,7 @@ export function AlertChannelsSection() {
             Alerts where you already work
           </h2>
           <p className="text-zinc-500 text-base max-w-md mx-auto">
-            Configure multiple channels for critical metrics.
+            Every alert includes the service name, metric, current usage, limit, and percentage — delivered to whichever channel you're already watching.
           </p>
         </motion.div>
 
