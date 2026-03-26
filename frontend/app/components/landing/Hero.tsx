@@ -1,12 +1,6 @@
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/button";
-
-// Lazy-load the animated demo — it's decorative and heavy, doesn't block LCP
-const HeroDashboardDemo = dynamic(
-  () => import("./HeroDashboardDemo").then((m) => m.HeroDashboardDemo),
-  { ssr: false, loading: () => <div style={{ width: 459, height: 378 }} /> }
-);
+import { HeroDemoLoader } from "./HeroDemoLoader";
 
 export function Hero() {
   return (
@@ -71,7 +65,7 @@ export function Hero() {
 
           {/* ── Right: Animated demo (lazy) ── */}
           <div className="hidden lg:flex justify-end">
-            <HeroDashboardDemo />
+            <HeroDemoLoader />
           </div>
         </div>
       </div>
