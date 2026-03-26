@@ -63,16 +63,23 @@ const SERVICE_ICONS: Record<string, React.ReactNode> = {
   ),
 };
 
-function estimateDaysUntilLimit(current: number, limit: number): number | null {
+type Projection =
+  | { type: "will-exceed"; daysLeft: number }
+  | { type: "safe"; projectedPct: number };
+
+function getProjection(current: number, limit: number): Projection | null {
   const now = new Date();
   const dayOfMonth = now.getDate();
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const daysRemaining = daysInMonth - dayOfMonth;
-  if (dayOfMonth === 0 || current <= 0) return null;
+  if (current <= 0 || limit <= 0) return null;
   const dailyRate = current / dayOfMonth;
   const daysLeft = (limit - current) / dailyRate;
-  if (daysLeft < daysRemaining) return Math.max(0, Math.round(daysLeft));
-  return null;
+  if (daysLeft <= daysRemaining) {
+    return { type: "will-exceed", daysLeft: Math.max(0, Math.round(daysLeft)) };
+  }
+  const projected = current + dailyRate * daysRemaining;
+  return { type: "safe", projectedPct: Math.min(99, Math.round((projected / limit) * 100)) };
 }
 
 function getBadgeVariant(pct: number): "success" | "warning" | "danger" {
@@ -155,18 +162,26 @@ function MetricRow({
           transition={{ duration: 0.5, ease: "easeOut" }}
         />
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between mt-0.5">
         <span className="text-xs text-zinc-600">
           {snap.current_value.toLocaleString()} /{" "}
           {snap.limit_value.toLocaleString()} {unit}
         </span>
         {(() => {
-          const d = estimateDaysUntilLimit(snap.current_value, snap.limit_value);
-          return d !== null ? (
-            <span className={`text-xs tabular-nums ${pct >= 80 ? "text-red-500" : "text-amber-500"}`}>
-              · ~{d === 0 ? "hits limit today" : `${d} days until limit`}
+          const proj = getProjection(snap.current_value, snap.limit_value);
+          if (!proj) return null;
+          if (proj.type === "will-exceed") {
+            return (
+              <span className={`text-xs tabular-nums font-medium ${pct >= 80 ? "text-red-400" : "text-amber-400"}`}>
+                {proj.daysLeft === 0 ? "Hits limit today" : `Limit in ~${proj.daysLeft}d`}
+              </span>
+            );
+          }
+          return (
+            <span className="text-xs text-zinc-600 tabular-nums">
+              ~{proj.projectedPct}% by month end
             </span>
-          ) : null;
+          );
         })()}
       </div>
       {subRows.length > 0 && (
@@ -340,28 +355,38 @@ export function GroupedUsageCard({
         </div>
 
         {/* Compact bars (top 3 by usage) */}
-        <div className="flex-1 space-y-2 mb-3">
+        <div className="flex-1 space-y-2.5 mb-3">
           {visible.map((snap) => {
-            const daysLeft = estimateDaysUntilLimit(snap.current_value, snap.limit_value);
+            const proj = getProjection(snap.current_value, snap.limit_value);
             return (
-              <div key={snap.metric_name} className="flex items-center gap-2">
-                <span className="text-xs text-zinc-600 w-32 shrink-0 truncate">
-                  {METRIC_LABELS[snap.metric_name] ?? snap.metric_name}
-                </span>
-                <div className="flex-1 h-1 rounded-full bg-white/6 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${getBarClass(snap.percent_used)}`}
-                    style={{ width: `${Math.min(snap.percent_used, 100)}%` }}
-                  />
-                </div>
-                {daysLeft !== null && (
-                  <span className={`text-[10px] shrink-0 tabular-nums ${snap.percent_used >= 80 ? "text-red-500" : "text-amber-500"}`}>
-                    ~{daysLeft === 0 ? "today" : `${daysLeft}d`}
+              <div key={snap.metric_name}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs text-zinc-600 w-32 shrink-0 truncate">
+                    {METRIC_LABELS[snap.metric_name] ?? snap.metric_name}
                   </span>
+                  <div className="flex-1 h-1 rounded-full bg-white/6 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${getBarClass(snap.percent_used)}`}
+                      style={{ width: `${Math.min(snap.percent_used, 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-zinc-500 w-7 text-right shrink-0 tabular-nums">
+                    {Math.round(snap.percent_used)}%
+                  </span>
+                </div>
+                {proj && (
+                  <div className="pl-34">
+                    {proj.type === "will-exceed" ? (
+                      <span className={`text-[10px] tabular-nums font-medium ${snap.percent_used >= 80 ? "text-red-400" : "text-amber-400"}`}>
+                        {proj.daysLeft === 0 ? "Hits limit today" : `Limit in ~${proj.daysLeft}d`}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-zinc-600 tabular-nums">
+                        ~{proj.projectedPct}% by month end
+                      </span>
+                    )}
+                  </div>
                 )}
-                <span className="text-xs text-zinc-500 w-7 text-right shrink-0">
-                  {Math.round(snap.percent_used)}%
-                </span>
               </div>
             );
           })}
