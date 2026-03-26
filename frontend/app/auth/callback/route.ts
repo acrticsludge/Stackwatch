@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import { sendWelcomeEmail } from "@/lib/onboarding/emails";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -20,12 +22,30 @@ export async function GET(request: Request) {
         .maybeSingle();
 
       if (!existing) {
-        await supabase.from("alert_channels").insert({
-          user_id: userId,
-          type: "email",
-          config: { email: data.user.email },
-          enabled: true,
-        });
+        const serviceClient = createServiceClient();
+        await Promise.all([
+          // Provision email alert channel
+          supabase.from("alert_channels").insert({
+            user_id: userId,
+            type: "email",
+            config: { email: data.user.email },
+            enabled: true,
+          }),
+          // Send welcome email and record it (unique constraint prevents duplicates)
+          serviceClient
+            .from("onboarding_emails")
+            .insert({ user_id: userId, type: "welcome" })
+            .then(({ error }) => {
+              if (!error || error.code === "23505") {
+                // Only send if this is truly the first time
+                if (!error) {
+                  sendWelcomeEmail(data.user.email!).catch((e) =>
+                    console.error("[onboarding] Welcome email failed:", e)
+                  );
+                }
+              }
+            }),
+        ]);
       }
 
       return NextResponse.redirect(`${origin}${redirectTo}`);

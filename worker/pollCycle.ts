@@ -4,6 +4,7 @@ import { fetchVercelUsage } from "./services/vercel";
 import { fetchSupabaseUsage } from "./services/supabase";
 import { fetchRailwayUsage } from "./services/railway";
 import { checkThresholds } from "./thresholds";
+import { sendFirstSyncEmail } from "./lib/onboarding/emails";
 
 export interface UsageMetric {
   metricName: string;
@@ -62,6 +63,10 @@ export async function runPollCycle(): Promise<void> {
 
   if (dueIntegrations.length === 0) return;
 
+  // Track users whose integration syncs data for the first time this cycle.
+  // Map of userId → service (first service that syncs wins).
+  const firstSyncCandidates = new Map<string, string>();
+
   const results = await Promise.allSettled(
     dueIntegrations.map(async (rawIntegration) => {
       // Cast meta from Json to the expected object type
@@ -70,6 +75,7 @@ export async function runPollCycle(): Promise<void> {
         meta: rawIntegration.meta as Record<string, unknown> | null,
       };
       const tier = tierMap.get(integration.user_id) ?? "free";
+      const isFirstSync = !integration.last_synced_at;
       try {
         let metrics: UsageMetric[] = [];
 
@@ -120,6 +126,11 @@ export async function runPollCycle(): Promise<void> {
             .update({ last_synced_at: new Date().toISOString(), status: "connected" })
             .eq("id", integration.id);
 
+          // Record first-sync candidates for onboarding email (sent after the loop)
+          if (isFirstSync && !firstSyncCandidates.has(integration.user_id)) {
+            firstSyncCandidates.set(integration.user_id, integration.service);
+          }
+
           // Check thresholds only on aggregate (non-entity) metrics to avoid alert spam
           const aggregateMetrics = metrics.filter((m) => !m.entityId);
           await checkThresholds(integration.user_id, integration.id, aggregateMetrics);
@@ -149,6 +160,33 @@ export async function runPollCycle(): Promise<void> {
   console.log(
     `[pollCycle] Done. ${results.length - failed} succeeded, ${failed} failed.`
   );
+
+  // ── First-sync onboarding emails ───────────────────────────────────────────
+  if (firstSyncCandidates.size > 0) {
+    await Promise.allSettled(
+      Array.from(firstSyncCandidates.entries()).map(async ([userId, service]) => {
+        try {
+          // Try to claim the "first_sync" slot — unique constraint prevents duplicates
+          const { error: insertError } = await supabase
+            .from("onboarding_emails")
+            .insert({ user_id: userId, type: "first_sync" });
+          if (insertError) return; // 23505 = already sent, or other DB error
+
+          const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+          const email = authUser?.user?.email;
+          if (email) {
+            await sendFirstSyncEmail(email, service);
+            console.log(`[pollCycle] First-sync email sent to user ${userId}`);
+          }
+        } catch (err) {
+          console.error(
+            `[pollCycle] First-sync email failed for user ${userId}:`,
+            err instanceof Error ? err.message : String(err)
+          );
+        }
+      })
+    );
+  }
 
   // ── Prune old snapshots ────────────────────────────────────────────────────
   // Hard cutoff: delete anything older than 30 days (pro/team limit)

@@ -1,6 +1,8 @@
 import * as dotenv from "dotenv";
 import * as cron from "node-cron";
 import { runPollCycle } from "./pollCycle";
+import { runActivationNudgeCheck } from "./lib/onboarding/nudgeCheck";
+import { createServiceClient } from "./lib/supabase/service";
 
 // Load .env locally; on Railway, env vars are injected automatically
 dotenv.config();
@@ -17,6 +19,15 @@ cron.schedule("*/5 * * * *", () => {
   console.log(`[worker] Poll cycle starting at ${new Date().toISOString()}`);
   runPollCycle().catch((err) =>
     console.error("[worker] Poll cycle error:", err)
+  );
+});
+
+// Run activation nudge check once per hour
+cron.schedule("0 * * * *", () => {
+  console.log(`[worker] Nudge check starting at ${new Date().toISOString()}`);
+  const supabase = createServiceClient();
+  runActivationNudgeCheck(supabase).catch((err) =>
+    console.error("[worker] Nudge check error:", err)
   );
 });
 

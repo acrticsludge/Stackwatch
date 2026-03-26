@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { encrypt } from "@/lib/encryption";
 import { checkIntegrationLimit, TierLimitError } from "@/lib/tiers";
+import { sendFirstIntegrationEmail } from "@/lib/onboarding/emails";
 
 const CreateSchema = z.object({
   service: z.enum(["github", "vercel", "supabase", "railway"]),
@@ -91,5 +92,24 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Fire first-integration onboarding email if this is the user's first ever integration.
+  // Non-blocking: failure here must not affect the API response.
+  if (user.email) {
+    (async () => {
+      try {
+        const { error: insertError } = await serviceClient
+          .from("onboarding_emails")
+          .insert({ user_id: user.id, type: "first_integration" });
+        // insert succeeds → first time ever; unique constraint violation (23505) → already sent
+        if (!insertError) {
+          await sendFirstIntegrationEmail(user.email!, service);
+        }
+      } catch (e) {
+        console.error("[onboarding] First integration email failed:", e);
+      }
+    })();
+  }
+
   return NextResponse.json(data, { status: 201 });
 }

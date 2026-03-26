@@ -4,6 +4,7 @@ export const SERVICE_LABELS: Record<string, string> = {
   github: "GitHub Actions",
   vercel: "Vercel",
   supabase: "Supabase",
+  railway: "Railway",
 };
 
 export const METRIC_LABELS: Record<string, string> = {
