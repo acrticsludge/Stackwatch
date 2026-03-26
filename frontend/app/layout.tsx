@@ -11,7 +11,7 @@ import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
 import { FeedbackWidget } from "@/app/components/FeedbackWidget";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://stackwatch.pulsemonitor.dev";
