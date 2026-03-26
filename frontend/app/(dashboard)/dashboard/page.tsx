@@ -134,7 +134,8 @@ async function UsageContent({ integrations }: { integrations: Integration[] }) {
         "integration_id, metric_name, current_value, limit_value, percent_used, entity_id, entity_label, recorded_at",
       )
       .in("integration_id", integrationIds)
-      .order("recorded_at", { ascending: false }),
+      .order("recorded_at", { ascending: false })
+      .limit(1000),
   ]);
 
   const tier = subscription?.tier ?? "free";
