@@ -72,10 +72,19 @@ async function digestFetch(url: string, username: string, password: string): Pro
   });
 }
 
-function handleAtlasError(status: number): never {
-  switch (status) {
+async function handleAtlasError(res: Response): Promise<never> {
+  // Read the Atlas error body for a more specific message when available.
+  let detail: string | null = null;
+  try {
+    const body = await res.json() as { detail?: string; reason?: string };
+    detail = body.detail ?? body.reason ?? null;
+  } catch { /* ignore parse failures */ }
+
+  switch (res.status) {
     case 401:
       throw new Error("MongoDB Atlas: Invalid API key (public/private key mismatch)");
+    case 402:
+      throw new Error(detail ?? "MongoDB Atlas: Billing feature not available — check your Atlas plan");
     case 403:
       throw new Error("MongoDB Atlas: API key lacks required access — needs Project Read Only");
     case 404:
@@ -83,7 +92,7 @@ function handleAtlasError(status: number): never {
     case 429:
       throw new Error("MongoDB Atlas: Rate limited — will retry next cycle");
     default:
-      throw new Error(`MongoDB Atlas API error: ${status}`);
+      throw new Error(detail ?? `MongoDB Atlas API error: ${res.status}`);
   }
 }
 
@@ -127,7 +136,7 @@ export async function fetchMongoDBUsage(
     publicKey,
     privateKey
   );
-  if (!clustersRes.ok) handleAtlasError(clustersRes.status);
+  if (!clustersRes.ok) await handleAtlasError(clustersRes);
 
   const clustersData = await clustersRes.json() as {
     results: Array<{
