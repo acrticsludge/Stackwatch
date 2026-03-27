@@ -11,6 +11,7 @@ const UpdateSchema = z.object({
   "meta.project_ref": z.string().min(1).optional(),
   "meta.public_key": z.string().min(1).optional(),
   "meta.project_id": z.string().min(1).optional(),
+  "meta.connection_string": z.string().min(1).optional(),
 });
 
 export async function PATCH(
@@ -45,18 +46,37 @@ export async function PATCH(
     updates.api_key = encrypt(parsed.data.api_key);
     // NEVER log the raw api_key
   }
-  if (parsed.data["meta.project_ref"]) {
-    updates.meta = { project_ref: parsed.data["meta.project_ref"] };
-  }
-  if (parsed.data["meta.public_key"] || parsed.data["meta.project_id"]) {
-    updates.meta = {
-      ...(typeof updates.meta === "object" && updates.meta !== null ? updates.meta : {}),
-      ...(parsed.data["meta.public_key"] ? { public_key: parsed.data["meta.public_key"] } : {}),
-      ...(parsed.data["meta.project_id"] ? { project_id: parsed.data["meta.project_id"] } : {}),
-    };
-  }
 
   const serviceClient = createServiceClient();
+
+  // Merge meta fields into existing meta to avoid wiping fields not sent in this request
+  const hasMetaUpdate =
+    parsed.data["meta.project_ref"] ||
+    parsed.data["meta.public_key"] ||
+    parsed.data["meta.project_id"] ||
+    parsed.data["meta.connection_string"];
+
+  if (hasMetaUpdate) {
+    const { data: existingRow } = await serviceClient
+      .from("integrations")
+      .select("meta")
+      .eq("id", id)
+      .single();
+    const existingMeta =
+      existingRow?.meta && typeof existingRow.meta === "object" && !Array.isArray(existingRow.meta)
+        ? (existingRow.meta as Record<string, unknown>)
+        : {};
+
+    if (parsed.data["meta.project_ref"])  existingMeta.project_ref = parsed.data["meta.project_ref"];
+    if (parsed.data["meta.public_key"])   existingMeta.public_key  = parsed.data["meta.public_key"];
+    if (parsed.data["meta.project_id"])   existingMeta.project_id  = parsed.data["meta.project_id"];
+    if (parsed.data["meta.connection_string"]) {
+      // Encrypt before storing — NEVER store plaintext connection string
+      existingMeta.connection_string_enc = encrypt(parsed.data["meta.connection_string"]);
+    }
+
+    updates.meta = existingMeta;
+  }
   const { data, error } = await serviceClient
     .from("integrations")
     .update(updates)

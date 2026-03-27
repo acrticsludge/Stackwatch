@@ -13,6 +13,7 @@ const CreateSchema = z.object({
   "meta.project_ref": z.string().optional(),
   "meta.public_key": z.string().optional(),
   "meta.project_id": z.string().optional(),
+  "meta.connection_string": z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.service === "mongodb") {
     if (!data["meta.public_key"]) {
@@ -72,6 +73,7 @@ export async function POST(request: Request) {
     "meta.project_ref": projectRef,
     "meta.public_key": publicKey,
     "meta.project_id": projectId,
+    "meta.connection_string": rawConnStr,
   } = parsed.data;
   const rawApiKey = parsed.data.api_key;
 
@@ -90,12 +92,16 @@ export async function POST(request: Request) {
   const encryptedKey = encrypt(rawApiKey);
   // NEVER log rawApiKey
 
+  // Encrypt connection string before storing — NEVER store plaintext
+  const encryptedConnStr = rawConnStr ? encrypt(rawConnStr) : undefined;
+
   const meta =
-    projectRef || publicKey || projectId
+    projectRef || publicKey || projectId || encryptedConnStr
       ? {
-          ...(projectRef ? { project_ref: projectRef } : {}),
-          ...(publicKey ? { public_key: publicKey } : {}),
-          ...(projectId ? { project_id: projectId } : {}),
+          ...(projectRef       ? { project_ref: projectRef } : {}),
+          ...(publicKey        ? { public_key: publicKey } : {}),
+          ...(projectId        ? { project_id: projectId } : {}),
+          ...(encryptedConnStr ? { connection_string_enc: encryptedConnStr } : {}),
         }
       : null;
 

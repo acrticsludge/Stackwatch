@@ -118,6 +118,8 @@ export const METRIC_LABELS: Record<string, string> = {
   // MongoDB Atlas — pro
   network_bytes_in_mb: "Network In",
   network_bytes_out_mb: "Network Out",
+  // MongoDB Atlas — direct connection (entity-level, display only)
+  collection_size_mb: "Collection Size",
 };
 
 export const METRIC_UNITS: Record<string, string> = {
@@ -164,4 +166,6 @@ export const METRIC_UNITS: Record<string, string> = {
   // MongoDB Atlas — pro
   network_bytes_in_mb: "MB",
   network_bytes_out_mb: "MB",
+  // MongoDB Atlas — direct connection (entity-level, display only)
+  collection_size_mb: "MB",
 };

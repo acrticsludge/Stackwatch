@@ -58,8 +58,8 @@ export type Database = {
           integration_id: string;
           metric_name: string;
           current_value: number;
-          limit_value: number;
-          percent_used: number;
+          limit_value: number | null;
+          percent_used: number | null;
           entity_id: string | null;
           entity_label: string | null;
           recorded_at: string;
@@ -69,8 +69,8 @@ export type Database = {
           integration_id: string;
           metric_name: string;
           current_value: number;
-          limit_value: number;
-          percent_used: number;
+          limit_value?: number | null;
+          percent_used?: number | null;
           entity_id?: string | null;
           entity_label?: string | null;
           recorded_at?: string;
@@ -80,8 +80,8 @@ export type Database = {
           integration_id?: string;
           metric_name?: string;
           current_value?: number;
-          limit_value?: number;
-          percent_used?: number;
+          limit_value?: number | null;
+          percent_used?: number | null;
           entity_id?: string | null;
           entity_label?: string | null;
           recorded_at?: string;

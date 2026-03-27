@@ -10,8 +10,8 @@ import { sendFirstSyncEmail } from "./lib/onboarding/emails";
 export interface UsageMetric {
   metricName: string;
   currentValue: number;
-  limitValue: number;
-  percentUsed: number;
+  limitValue: number | null;   // null = informational metric with no hard quota
+  percentUsed: number | null;  // null when limitValue is null
   entityId?: string;    // undefined = account-level aggregate; set = per-repo/project/bucket
   entityLabel?: string; // human-readable entity name for display
 }

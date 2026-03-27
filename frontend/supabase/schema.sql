@@ -31,8 +31,8 @@ create table if not exists usage_snapshots (
   integration_id  uuid not null references integrations(id) on delete cascade,
   metric_name     text not null,
   current_value   numeric not null,
-  limit_value     numeric not null,
-  percent_used    numeric not null,
+  limit_value     numeric,       -- null = informational metric with no hard quota
+  percent_used    numeric,       -- null when limit_value is null
   entity_id       text,          -- null = account-level aggregate; set = per-repo/project/bucket
   entity_label    text,          -- human-readable entity name for display
   recorded_at     timestamptz not null default now()
@@ -55,6 +55,9 @@ create index if not exists usage_snapshots_entity_idx on usage_snapshots(integra
 -- ALTER TABLE usage_snapshots ADD COLUMN IF NOT EXISTS entity_label text;
 -- CREATE INDEX IF NOT EXISTS usage_snapshots_entity_idx
 --   ON usage_snapshots(integration_id, metric_name, entity_id);
+-- Allow null limit_value/percent_used for informational metrics (e.g. MongoDB per-db/collection sizes):
+-- ALTER TABLE usage_snapshots ALTER COLUMN limit_value DROP NOT NULL;
+-- ALTER TABLE usage_snapshots ALTER COLUMN percent_used DROP NOT NULL;
 -- CREATE TABLE IF NOT EXISTS subscriptions (
 --   id uuid primary key default uuid_generate_v4(),
 --   user_id uuid not null references auth.users(id) on delete cascade,

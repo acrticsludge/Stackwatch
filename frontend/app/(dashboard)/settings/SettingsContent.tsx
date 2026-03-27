@@ -166,6 +166,7 @@ interface SettingsContentProps {
   nextBillingAt?: string | null;
   cancelAtPeriodEnd?: boolean;
   defaultTab?: string;
+  snapshotMetrics?: Record<string, string[]>;
 }
 
 const DEFAULT_METRICS: Record<string, string[]> = {
@@ -219,6 +220,7 @@ export function SettingsContent({
   nextBillingAt,
   cancelAtPeriodEnd = false,
   defaultTab = "alerts",
+  snapshotMetrics = {},
 }: SettingsContentProps) {
   const isPro = tier === "pro" || tier === "team";
   const isTrialing = subscriptionStatus === "trialing";
@@ -453,9 +455,14 @@ export function SettingsContent({
         ) : (
           <div className="space-y-4">
             {integrations.map((intg) => {
+              const available = snapshotMetrics[intg.id] ?? [];
               const metrics = [
                 ...(DEFAULT_METRICS[intg.service] ?? []),
-                ...(isPro ? (PRO_METRICS[intg.service] ?? []) : []),
+                ...(isPro
+                  ? (PRO_METRICS[intg.service] ?? []).filter(
+                      (m) => available.length === 0 || available.includes(m),
+                    )
+                  : []),
               ];
               return (
                 <div

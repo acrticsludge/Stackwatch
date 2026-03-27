@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "crypto";
+import { MongoClient } from "mongodb";
 import { decrypt } from "../lib/encryption";
 import type { UsageMetric } from "../pollCycle";
 
@@ -16,24 +17,25 @@ const ATLAS_ACCEPT = "application/vnd.atlas.2023-02-01+json";
 
 // Storage (MB) and connection limits by cluster instance size
 const CLUSTER_LIMITS: Record<string, { storageMB: number; connections: number }> = {
-  M0: { storageMB: 512,    connections: 500    },
-  M2: { storageMB: 2048,   connections: 300    },
-  M5: { storageMB: 5120,   connections: 500    },
+  M0:  { storageMB: 512,    connections: 500   },
+  M2:  { storageMB: 2048,   connections: 300   },
+  M5:  { storageMB: 5120,   connections: 500   },
   M10: { storageMB: 10240,  connections: 1500  },
   M20: { storageMB: 20480,  connections: 3000  },
   M30: { storageMB: 40960,  connections: 3000  },
 };
 const DEFAULT_LIMITS = { storageMB: 512000, connections: 100000 };
 
+// System databases to skip when listing user databases
+const SYSTEM_DBS = new Set(["admin", "local", "config"]);
+
 // ── HTTP Digest Auth helper ────────────────────────────────────────────────────
-// Implements RFC 7616 Digest auth using Node's built-in crypto (no extra deps).
 
 function md5(str: string): string {
   return createHash("md5").update(str).digest("hex");
 }
 
 async function digestFetch(url: string, username: string, password: string): Promise<Response> {
-  // Step 1: Send unauthenticated request to obtain the Digest challenge
   const challengeRes = await fetch(url, { headers: { Accept: ATLAS_ACCEPT } });
   if (challengeRes.status !== 401) return challengeRes;
 
@@ -73,7 +75,6 @@ async function digestFetch(url: string, username: string, password: string): Pro
 }
 
 async function handleAtlasError(res: Response): Promise<never> {
-  // Read the Atlas error body for a more specific message when available.
   let detail: string | null = null;
   try {
     const body = await res.json() as { detail?: string; reason?: string };
@@ -111,6 +112,108 @@ function latestValue(measurements: AtlasMeasurement[], name: string): number | n
   if (!m) return null;
   const dp = m.dataPoints.find((p) => p.value !== null);
   return dp?.value ?? null;
+}
+
+// ── Direct connection path ─────────────────────────────────────────────────────
+// Used when the user provides a MongoDB connection string with clusterMonitor access.
+// Returns real storage and connection values instead of Admin API 0/limit placeholders.
+
+async function fetchViaDirectConnection(
+  connectionString: string,  // NEVER log this
+  limits: { storageMB: number; connections: number },
+  isPro: boolean
+): Promise<UsageMetric[]> {
+  const client = new MongoClient(connectionString, {
+    serverSelectionTimeoutMS: 10_000,
+    connectTimeoutMS: 10_000,
+  });
+
+  try {
+    await client.connect();
+    const adminDb = client.db("admin");
+
+    // Connections from serverStatus
+    const status = await adminDb.command({ serverStatus: 1 }) as {
+      connections?: { current?: number; available?: number };
+    };
+    const currentConnections = status.connections?.current ?? 0;
+
+    // Get all user databases and their storage stats
+    const dbListResult = await adminDb.admin().listDatabases() as {
+      databases: Array<{ name: string; sizeOnDisk?: number }>;
+    };
+    const userDbs = dbListResult.databases.filter((d) => !SYSTEM_DBS.has(d.name));
+
+    let totalStorageMB = 0;
+    const metrics: UsageMetric[] = [];
+
+    for (const dbInfo of userDbs) {
+      const db = client.db(dbInfo.name);
+      let dbStorageMB = 0;
+
+      try {
+        const stats = await db.command({ dbStats: 1 }) as { storageSize?: number };
+        dbStorageMB = Math.round(((stats.storageSize ?? 0) / 1_000_000) * 100) / 100;
+      } catch {
+        // Fallback to sizeOnDisk if dbStats is unavailable (restricted clusters)
+        dbStorageMB = Math.round(((dbInfo.sizeOnDisk ?? 0) / 1_000_000) * 100) / 100;
+      }
+
+      totalStorageMB += dbStorageMB;
+
+      if (isPro) {
+        metrics.push({
+          metricName: "db_size_mb",
+          currentValue: dbStorageMB,
+          limitValue: null,
+          percentUsed: null,
+          entityId: dbInfo.name,
+          entityLabel: dbInfo.name,
+        });
+
+        // Per-collection breakdown
+        try {
+          const collections = await db.listCollections().toArray();
+          for (const coll of collections) {
+            try {
+              const cs = await db.command({ collStats: coll.name }) as { storageSize?: number };
+              const collStorageMB = Math.round(((cs.storageSize ?? 0) / 1_000_000) * 100) / 100;
+              metrics.push({
+                metricName: "collection_size_mb",
+                currentValue: collStorageMB,
+                limitValue: null,
+                percentUsed: null,
+                entityId: `${dbInfo.name}/${coll.name}`,
+                entityLabel: coll.name,
+              });
+            } catch {
+              // Skip individual collections that fail
+            }
+          }
+        } catch {
+          // Skip collection listing if unavailable
+        }
+      }
+    }
+
+    return [
+      {
+        metricName: "storage_mb",
+        currentValue: Math.round(totalStorageMB * 100) / 100,
+        limitValue: limits.storageMB,
+        percentUsed: pct(totalStorageMB, limits.storageMB),
+      },
+      {
+        metricName: "connections",
+        currentValue: currentConnections,
+        limitValue: limits.connections,
+        percentUsed: pct(currentConnections, limits.connections),
+      },
+      ...metrics,
+    ];
+  } finally {
+    await client.close();
+  }
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
@@ -164,7 +267,131 @@ export async function fetchMongoDBUsage(
     clusterLimitsMap.set(cluster.name, limits);
   }
 
-  // ── 2. Fetch processes ───────────────────────────────────────────────────
+  const primaryLimits = clusterLimitsMap.get(clusters[0]?.name ?? "") ?? DEFAULT_LIMITS;
+
+  // ── 2. Direct connection path (when connection string is provided) ────────
+  const connStringEnc = integration.meta?.connection_string_enc;
+  if (connStringEnc) {
+    let connectionString: string;
+    try {
+      connectionString = decrypt(String(connStringEnc));
+      // NEVER log connectionString
+    } catch (err) {
+      console.warn(
+        `[mongodb] Failed to decrypt connection string for integration ${integration.id}:`,
+        err instanceof Error ? err.message : String(err)
+      );
+      // Fall through to Admin API path
+      return fetchViaAdminAPI(integration, projectId, publicKey, privateKey, clusters, clusterLimitsMap, primaryLimits, isPro);
+    }
+
+    try {
+      const directMetrics = await fetchViaDirectConnection(connectionString, primaryLimits, isPro);
+
+      // Pro: also get network metrics from Admin API (not available via direct connection)
+      if (isPro) {
+        const netMetrics = await fetchNetworkMetrics(integration, projectId, publicKey, privateKey, primaryLimits);
+        return [...directMetrics, ...netMetrics];
+      }
+
+      return directMetrics;
+    } catch (err) {
+      console.warn(
+        `[mongodb] Direct connection failed for integration ${integration.id} — falling back to Admin API:`,
+        err instanceof Error ? err.message : String(err)
+      );
+      // Fall through to Admin API path
+    }
+  }
+
+  return fetchViaAdminAPI(integration, projectId, publicKey, privateKey, clusters, clusterLimitsMap, primaryLimits, isPro);
+}
+
+// ── Admin API path (original, for non-connection-string or fallback) ──────────
+
+async function fetchNetworkMetrics(
+  integration: Integration,
+  projectId: string,
+  publicKey: string,
+  privateKey: string,
+  primaryLimits: { storageMB: number; connections: number }
+): Promise<UsageMetric[]> {
+  // Requires a process to query against
+  const processesRes = await digestFetch(
+    `${ATLAS_BASE}/groups/${projectId}/processes`,
+    publicKey,
+    privateKey
+  );
+  if (!processesRes.ok) return [];
+
+  const processesData = await processesRes.json() as {
+    results: Array<{ id: string; typeName?: string }>;
+  };
+  const processes = processesData.results ?? [];
+  if (processes.length === 0) return [];
+
+  const sortedProcesses = [...processes].sort((a, b) => {
+    if (a.typeName === "REPLICA_PRIMARY") return -1;
+    if (b.typeName === "REPLICA_PRIMARY") return 1;
+    return 0;
+  });
+  const aggregateProcess = sortedProcesses[0];
+
+  const HOURLY_NET_LIMIT_MB = Math.round((10 * 1024) / 24);
+  const measParams = [
+    "granularity=PT1H",
+    "period=PT2H",
+    "m=NETWORK_BYTES_IN",
+    "m=NETWORK_BYTES_OUT",
+  ].join("&");
+
+  const measRes = await digestFetch(
+    `${ATLAS_BASE}/groups/${projectId}/processes/${aggregateProcess.id}/measurements?${measParams}`,
+    publicKey,
+    privateKey
+  );
+  if (!measRes.ok) return [];
+
+  const measData = await measRes.json() as { measurements: AtlasMeasurement[] };
+  const measurements = measData.measurements ?? [];
+  const metrics: UsageMetric[] = [];
+
+  const netIn = latestValue(measurements, "NETWORK_BYTES_IN");
+  if (netIn !== null) {
+    const netInMBh = Math.round((netIn * 3600) / 1_000_000 * 100) / 100;
+    metrics.push({
+      metricName: "network_bytes_in_mb",
+      currentValue: netInMBh,
+      limitValue: HOURLY_NET_LIMIT_MB,
+      percentUsed: pct(netInMBh, HOURLY_NET_LIMIT_MB),
+    });
+  }
+
+  const netOut = latestValue(measurements, "NETWORK_BYTES_OUT");
+  if (netOut !== null) {
+    const netOutMBh = Math.round((netOut * 3600) / 1_000_000 * 100) / 100;
+    metrics.push({
+      metricName: "network_bytes_out_mb",
+      currentValue: netOutMBh,
+      limitValue: HOURLY_NET_LIMIT_MB,
+      percentUsed: pct(netOutMBh, HOURLY_NET_LIMIT_MB),
+    });
+  }
+
+  return metrics;
+}
+
+async function fetchViaAdminAPI(
+  integration: Integration,
+  projectId: string,
+  publicKey: string,
+  privateKey: string,
+  clusters: Array<{ name: string; providerSettings?: { instanceSizeName?: string }; diskSizeGB?: number }>,
+  clusterLimitsMap: Map<string, { storageMB: number; connections: number }>,
+  primaryLimits: { storageMB: number; connections: number },
+  isPro: boolean
+): Promise<UsageMetric[]> {
+  // ── Fetch processes ───────────────────────────────────────────────────────
   const processesRes = await digestFetch(
     `${ATLAS_BASE}/groups/${projectId}/processes`,
     publicKey,
@@ -177,9 +404,9 @@ export async function fetchMongoDBUsage(
 
   const processesData = await processesRes.json() as {
     results: Array<{
-      id: string;           // "hostname:port"
+      id: string;
       replicaSetName?: string;
-      typeName?: string;    // "REPLICA_PRIMARY" | "REPLICA_SECONDARY" | ...
+      typeName?: string;
     }>;
   };
   const processes = processesData.results ?? [];
@@ -189,11 +416,8 @@ export async function fetchMongoDBUsage(
     return [];
   }
 
-  // Sort processes: explicit REPLICA_PRIMARY first, then by replica member number
-  // ascending. Atlas names members as "shard-XX-NN" where NN is the member index;
-  // member 00 is most likely the primary when typeName isn't populated.
   const replicaMemberNum = (id: string): number => {
-    const m = id.match(/-(\d{2})\./);          // last "-NN." before the domain
+    const m = id.match(/-(\d{2})\./);
     return m ? parseInt(m[1], 10) : 99;
   };
   const sortedProcesses = [...processes].sort((a, b) => {
@@ -204,11 +428,8 @@ export async function fetchMongoDBUsage(
   const aggregateProcess = sortedProcesses[0];
 
   const metrics: UsageMetric[] = [];
-  const primaryLimits = clusterLimitsMap.get(clusters[0]?.name ?? "") ?? DEFAULT_LIMITS;
 
-  // ── 3. Fetch aggregate measurements (account-level) ──────────────────────
-  // M0/M2/M5 shared clusters only support coarser granularity (P1D).
-  // Try PT1H first for better resolution; fall back to P1D if 404.
+  // ── Fetch aggregate measurements ──────────────────────────────────────────
   const measurementNames = [
     "DB_DATA_SIZE_TOTAL",
     "CONNECTIONS",
@@ -216,7 +437,7 @@ export async function fetchMongoDBUsage(
   ];
 
   const GRAN_CONFIGS = [
-    { granularity: "PT1M", period: "PT2H" },  // M0 only supports minute granularity
+    { granularity: "PT1M", period: "PT2H" },
     { granularity: "PT1H", period: "PT2H" },
     { granularity: "P1D",  period: "P7D"  },
   ] as const;
@@ -249,9 +470,6 @@ export async function fetchMongoDBUsage(
   }
 
   if (!measurements) {
-    // Atlas M0/M2/M5 free-tier clusters don't expose process measurements via the
-    // Admin API. Fall back to the known tier limits with currentValue = 0 so the
-    // dashboard at least shows the cluster is connected and what the limits are.
     console.info(
       `[mongodb] Process measurements unavailable for project ${projectId} ` +
       `(M0/free-tier limitation). Returning tier limits only (integration ${integration.id}).`
@@ -272,7 +490,7 @@ export async function fetchMongoDBUsage(
     ];
   }
 
-  // ── FREE: Storage ────────────────────────────────────────────────────────
+  // Storage
   const dataSizeBytes = latestValue(measurements, "DB_DATA_SIZE_TOTAL");
   if (dataSizeBytes !== null) {
     const storageMB = Math.round(dataSizeBytes / 1_000_000 * 100) / 100;
@@ -284,7 +502,7 @@ export async function fetchMongoDBUsage(
     });
   }
 
-  // ── FREE: Connections ────────────────────────────────────────────────────
+  // Connections
   const connections = latestValue(measurements, "CONNECTIONS");
   if (connections !== null) {
     metrics.push({
@@ -297,11 +515,8 @@ export async function fetchMongoDBUsage(
 
   if (!isPro) return metrics;
 
-  // ── PRO: Network throughput ──────────────────────────────────────────────
-  // Atlas monitoring reports NETWORK_BYTES_IN/OUT as bytes/sec (rolling avg).
-  // We multiply by 3600 to get MB/hour and compare against 10GB/day expressed
-  // per hour (427 MB/h) so the percentage reflects sustained bandwidth usage.
-  const HOURLY_NET_LIMIT_MB = Math.round((10 * 1024) / 24); // ~427 MB/h
+  // ── PRO: Network throughput ───────────────────────────────────────────────
+  const HOURLY_NET_LIMIT_MB = Math.round((10 * 1024) / 24);
 
   const netIn = latestValue(measurements, "NETWORK_BYTES_IN");
   if (netIn !== null) {
@@ -325,24 +540,21 @@ export async function fetchMongoDBUsage(
     });
   }
 
-  // ── PRO: Per-cluster storage breakdown ───────────────────────────────────
-  // Only emitted when there are multiple clusters so it adds value.
+  // ── PRO: Per-cluster storage breakdown ────────────────────────────────────
   if (clusters.length > 1) {
-    // Group primary processes by replicaSetName to map cluster → process
     const replicaSetToProcess = new Map<string, string>();
-    for (const p of primaryProcesses.length > 0 ? primaryProcesses : processes) {
+    for (const p of processes) {
       if (p.replicaSetName && !replicaSetToProcess.has(p.replicaSetName)) {
         replicaSetToProcess.set(p.replicaSetName, p.id);
       }
     }
 
     for (const cluster of clusters) {
-      // Find the process for this cluster — replicaSetName usually starts with the cluster name
       const processId =
         replicaSetToProcess.get(cluster.name) ??
         [...replicaSetToProcess.entries()].find(([rs]) => rs.startsWith(cluster.name))?.[1];
 
-      if (!processId || processId === aggregateProcess.id) continue; // skip if same as aggregate
+      if (!processId || processId === aggregateProcess.id) continue;
 
       try {
         const clRes = await digestFetch(

@@ -138,7 +138,8 @@ const SERVICES = [
     id: "mongodb",
     name: "MongoDB Atlas",
     description: "Track storage and connection usage across Atlas clusters.",
-    caveat: null,
+    caveat:
+      "M0/free-tier clusters don't expose live measurements via the Atlas Admin API — values show as 0/limit. Add a connection string (optional) with clusterMonitor access to get real-time data.",
     wikiUrl: `${WIKI_BASE}/Connecting-MongoDB-Atlas`,
     fields: [
       {
@@ -160,6 +161,13 @@ const SERVICES = [
         placeholder: "e.g. 64a1b2c3d4e5f6a7b8c9d0e1",
       },
       {
+        key: "meta.connection_string",
+        label: "Connection String (optional)",
+        type: "password",
+        placeholder: "mongodb+srv://user:pass@cluster.mongodb.net/",
+        optional: true,
+      },
+      {
         key: "account_label",
         label: "Account label",
         type: "text",
@@ -167,7 +175,7 @@ const SERVICES = [
       },
     ],
     helpText:
-      "Atlas → Identity & Access → Applications → API Keys. Grant Project Read Only access. Find your Project ID in the Atlas URL.",
+      "Atlas → Identity & Access → Applications → API Keys. Grant Project Read Only access. For the connection string, create a DB user with the clusterMonitor built-in role.",
   },
 ];
 
@@ -192,6 +200,7 @@ export function IntegrationsContent({
     const errors: Record<string, string> = {};
     for (const field of svc.fields) {
       if (isEdit && field.type === "password") continue; // blank = keep existing
+      if (field.optional) continue; // optional fields are never required
       if (!formData[field.key]?.trim()) {
         errors[field.key] = `${field.label} is required.`;
       }

@@ -44,6 +44,28 @@ async function SettingsData({
       supabase.from("alert_channels").select("id, type, config, enabled"),
     ]);
 
+  // Build a map of which metrics have snapshot data per integration.
+  // Used to hide alert configs for pro metrics that this cluster never reports
+  // (e.g. Network In/Out for Atlas M0 clusters which don't expose measurements).
+  const integrationIds = (integrations ?? []).map((i) => i.id);
+  const snapshotMetrics: Record<string, string[]> = {};
+  if (integrationIds.length > 0) {
+    const { data: snapRows } = await supabase
+      .from("usage_snapshots")
+      .select("integration_id, metric_name")
+      .in("integration_id", integrationIds)
+      .order("recorded_at", { ascending: false })
+      .limit(200);
+    const seen = new Map<string, Set<string>>();
+    for (const row of snapRows ?? []) {
+      if (!seen.has(row.integration_id)) seen.set(row.integration_id, new Set());
+      seen.get(row.integration_id)!.add(row.metric_name);
+    }
+    for (const [id, metricsSet] of seen) {
+      snapshotMetrics[id] = [...metricsSet];
+    }
+  }
+
   // Auto-provision email channel for users who signed up before this was added
   let finalAlertChannels = alertChannels ?? [];
   if (session?.user) {
@@ -74,6 +96,7 @@ async function SettingsData({
       nextBillingAt={subscription?.next_billing_at ?? null}
       cancelAtPeriodEnd={subscription?.cancel_at_period_end ?? false}
       defaultTab={tab ?? "alerts"}
+      snapshotMetrics={snapshotMetrics}
     />
   );
 }

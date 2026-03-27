@@ -15,17 +15,17 @@ import { UsageHistoryChart } from "./UsageHistoryChart";
 interface Snapshot {
   metric_name: string;
   current_value: number;
-  limit_value: number;
-  percent_used: number;
+  limit_value: number | null;
+  percent_used: number | null;
   entity_id?: string | null;
   entity_label?: string | null;
 }
 
 interface HistoryEntry {
   recorded_at: string;
-  percent_used: number;
+  percent_used: number | null;
   current_value: number;
-  limit_value: number;
+  limit_value: number | null;
 }
 
 interface GroupedUsageCardProps {
@@ -72,12 +72,13 @@ type Projection =
   | { type: "will-exceed"; daysLeft: number }
   | { type: "safe"; projectedPct: number };
 
-function getProjection(current: number, limit: number): Projection | null {
+function getProjection(current: number, limit: number | null): Projection | null {
+  if (limit === null || limit <= 0) return null;
   const now = new Date();
   const dayOfMonth = now.getDate();
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const daysRemaining = daysInMonth - dayOfMonth;
-  if (current <= 0 || limit <= 0) return null;
+  if (current <= 0) return null;
   const dailyRate = current / dayOfMonth;
   const daysLeft = (limit - current) / dailyRate;
   if (daysLeft <= daysRemaining) {
@@ -114,7 +115,7 @@ function MetricRow({
   const [history, setHistory] = useState<HistoryEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const pct = Math.round(snap.percent_used);
+  const pct = Math.round(snap.percent_used ?? 0);
   const unit = METRIC_UNITS[snap.metric_name] ?? "";
   const subRows = entitySnapshots.filter((e) => e.metric_name === snap.metric_name);
 
@@ -159,18 +160,22 @@ function MetricRow({
           </Badge>
         </div>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-white/6 mb-1.5 overflow-hidden">
-        <motion.div
-          className={`h-full rounded-full ${getBarClass(pct)}`}
-          initial={{ width: 0 }}
-          animate={{ width: `${Math.min(pct, 100)}%` }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        />
-      </div>
+      {snap.limit_value !== null ? (
+        <div className="h-1.5 w-full rounded-full bg-white/6 mb-1.5 overflow-hidden">
+          <motion.div
+            className={`h-full rounded-full ${getBarClass(pct)}`}
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.min(pct, 100)}%` }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          />
+        </div>
+      ) : (
+        <div className="h-1.5 mb-1.5" />
+      )}
       <div className="flex items-center justify-between mt-0.5">
         <span className="text-xs text-zinc-600">
-          {snap.current_value.toLocaleString()} /{" "}
-          {snap.limit_value.toLocaleString()} {unit}
+          {snap.current_value.toLocaleString()}
+          {snap.limit_value !== null ? ` / ${snap.limit_value.toLocaleString()} ${unit}` : ` ${unit}`}
         </span>
         {(() => {
           const proj = getProjection(snap.current_value, snap.limit_value);
@@ -215,6 +220,77 @@ function MetricRow({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── MongoDB per-database/collection accordion ─────────────────────────────────
+
+function MongoDBDatabaseAccordion({ entitySnapshots }: { entitySnapshots: Snapshot[] }) {
+  const dbSnapshots = entitySnapshots.filter((e) => e.metric_name === "db_size_mb");
+  const collSnapshots = entitySnapshots.filter((e) => e.metric_name === "collection_size_mb");
+  const [expandedDbs, setExpandedDbs] = useState<Set<string>>(new Set());
+
+  if (dbSnapshots.length === 0) return null;
+
+  function toggle(dbName: string) {
+    setExpandedDbs((prev) => {
+      const next = new Set(prev);
+      if (next.has(dbName)) next.delete(dbName);
+      else next.add(dbName);
+      return next;
+    });
+  }
+
+  return (
+    <div className="mt-2">
+      <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-2">Databases</p>
+      <div className="space-y-1">
+        {dbSnapshots.map((db) => {
+          const dbName = db.entity_id ?? db.entity_label ?? "unknown";
+          const isExpanded = expandedDbs.has(dbName);
+          const dbColls = collSnapshots.filter((c) =>
+            c.entity_id?.startsWith(`${dbName}/`)
+          );
+          return (
+            <div key={dbName} className="rounded-lg border border-white/6 overflow-hidden">
+              <button
+                onClick={() => toggle(dbName)}
+                className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/3 transition-colors"
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <ChevronDown
+                    className={`h-3 w-3 text-zinc-600 shrink-0 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
+                  />
+                  <span className="text-xs text-zinc-300 truncate">{db.entity_label ?? dbName}</span>
+                </div>
+                <span className="text-xs text-zinc-500 shrink-0 ml-2 tabular-nums">
+                  {db.current_value.toLocaleString()} MB
+                </span>
+              </button>
+              {isExpanded && dbColls.length > 0 && (
+                <div className="border-t border-white/6 px-3 py-1.5 space-y-1 bg-white/[0.02]">
+                  {dbColls.map((coll) => (
+                    <div key={coll.entity_id} className="flex items-center justify-between">
+                      <span className="text-[11px] text-zinc-600 truncate max-w-40">
+                        {coll.entity_label ?? coll.entity_id}
+                      </span>
+                      <span className="text-[11px] text-zinc-500 shrink-0 ml-2 tabular-nums">
+                        {coll.current_value.toLocaleString()} MB
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {isExpanded && dbColls.length === 0 && (
+                <div className="border-t border-white/6 px-3 py-2 bg-white/[0.02]">
+                  <p className="text-[11px] text-zinc-700">No collection data</p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -281,6 +357,15 @@ function UsageDetailModal({
               isPro={isPro}
             />
           ))}
+          {service === "mongodb" &&
+            snapshots.every((s) => s.current_value === 0 && (s.percent_used ?? 0) === 0) && (
+              <div className="rounded-lg border border-amber-500/15 bg-amber-500/5 px-3 py-2.5">
+                <p className="text-xs text-amber-500/80 leading-relaxed">
+                  M0 clusters don&apos;t expose measurements via the Atlas Admin API. Add a connection string with <span className="font-medium">clusterMonitor</span> access in Integrations to get live storage and connection data.
+                </p>
+              </div>
+            )}
+          <MongoDBDatabaseAccordion entitySnapshots={entitySnapshots} />
         </div>
 
         {/* Footer */}
@@ -329,8 +414,8 @@ export function GroupedUsageCard({
   isPro = false,
 }: GroupedUsageCardProps) {
   const [open, setOpen] = useState(false);
-  const worstPct = Math.round(Math.max(...snapshots.map((s) => s.percent_used)));
-  const sorted = [...snapshots].sort((a, b) => b.percent_used - a.percent_used);
+  const worstPct = Math.round(Math.max(...snapshots.map((s) => s.percent_used ?? 0)));
+  const sorted = [...snapshots].sort((a, b) => (b.percent_used ?? 0) - (a.percent_used ?? 0));
   const visible = sorted.slice(0, MAX_VISIBLE);
   const hiddenCount = Math.max(0, snapshots.length - MAX_VISIBLE);
 
@@ -362,7 +447,7 @@ export function GroupedUsageCard({
         {/* Compact bars (top 3 by usage) */}
         <div className="flex-1 space-y-2.5 mb-3">
           {visible.map((snap) => {
-            const pct = Math.round(snap.percent_used);
+            const pct = Math.round(snap.percent_used ?? 0);
             const proj = getProjection(snap.current_value, snap.limit_value);
             return (
               <div key={snap.metric_name} className="flex items-center gap-2">
@@ -371,8 +456,8 @@ export function GroupedUsageCard({
                 </span>
                 <div className="flex-1 h-1 rounded-full bg-white/6 overflow-hidden">
                   <div
-                    className={`h-full rounded-full ${getBarClass(snap.percent_used)}`}
-                    style={{ width: `${Math.min(snap.percent_used, 100)}%` }}
+                    className={`h-full rounded-full ${getBarClass(pct)}`}
+                    style={{ width: snap.limit_value !== null ? `${Math.min(pct, 100)}%` : "0%" }}
                   />
                 </div>
                 <div className="flex items-center gap-1 shrink-0 justify-end">
@@ -397,6 +482,12 @@ export function GroupedUsageCard({
               +{hiddenCount} more · click for details
             </p>
           )}
+          {service === "mongodb" &&
+            snapshots.every((s) => s.current_value === 0 && (s.percent_used ?? 0) === 0) && (
+              <p className="text-[10px] text-amber-500/60 mt-1.5">
+                M0: add a connection string in Integrations for live data
+              </p>
+            )}
         </div>
 
         {/* Footer */}

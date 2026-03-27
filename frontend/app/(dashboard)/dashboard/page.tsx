@@ -23,8 +23,8 @@ interface LatestSnapshot {
   integration_id: string;
   metric_name: string;
   current_value: number;
-  limit_value: number;
-  percent_used: number;
+  limit_value: number | null;
+  percent_used: number | null;
   entity_id: string | null;
   entity_label: string | null;
   recorded_at: string;
@@ -150,13 +150,13 @@ async function UsageContent({ integrations }: { integrations: Integration[] }) {
     return (FREE_METRICS[service ?? ""] ?? []).includes(s.metric_name);
   });
   const criticalCount = aggregateSnapshots.filter(
-    (s) => s.percent_used >= 80,
+    (s) => (s.percent_used ?? 0) >= 80,
   ).length;
   const warningCount = aggregateSnapshots.filter(
-    (s) => s.percent_used >= 60 && s.percent_used < 80,
+    (s) => (s.percent_used ?? 0) >= 60 && (s.percent_used ?? 0) < 80,
   ).length;
   const healthyCount = aggregateSnapshots.filter(
-    (s) => s.percent_used < 60,
+    (s) => (s.percent_used ?? 0) < 60,
   ).length;
 
   return (
