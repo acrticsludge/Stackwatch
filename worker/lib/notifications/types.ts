@@ -7,8 +7,8 @@ export interface AlertPayload {
   accountLabel: string;
   metricName: string;
   currentValue: number;
-  limitValue: number;
-  percentUsed: number;
+  limitValue: number | null;
+  percentUsed: number | null;
   recordedAt: string;
 }
 

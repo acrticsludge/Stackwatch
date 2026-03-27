@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type ServiceType = "github" | "vercel" | "supabase" | "railway";
+export type ServiceType = "github" | "vercel" | "supabase" | "railway" | "mongodb";
 export type IntegrationStatus = "connected" | "error" | "disconnected" | "unsupported";
 export type ChannelType = "email" | "slack" | "discord" | "push";
 
@@ -55,8 +55,8 @@ export type Database = {
           integration_id: string;
           metric_name: string;
           current_value: number;
-          limit_value: number;
-          percent_used: number;
+          limit_value: number | null;
+          percent_used: number | null;
           entity_id: string | null;
           entity_label: string | null;
           recorded_at: string;
@@ -66,8 +66,8 @@ export type Database = {
           integration_id: string;
           metric_name: string;
           current_value: number;
-          limit_value: number;
-          percent_used: number;
+          limit_value: number | null;
+          percent_used: number | null;
           entity_id?: string | null;
           entity_label?: string | null;
           recorded_at?: string;
@@ -180,7 +180,7 @@ export type Database = {
           user_id: string;
           integration_id: string;
           metric_name: string;
-          percent_used: number;
+          percent_used: number | null;
           channel: ChannelType;
           sent_at: string;
         };
@@ -189,7 +189,7 @@ export type Database = {
           user_id: string;
           integration_id: string;
           metric_name: string;
-          percent_used: number;
+          percent_used: number | null;
           channel: ChannelType;
           sent_at?: string;
         };

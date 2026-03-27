@@ -135,6 +135,7 @@ async function fetchViaDirectConnection(
     // Connections from serverStatus
     const status = await adminDb.command({ serverStatus: 1 }) as {
       connections?: { current?: number; available?: number };
+      mem?: { resident?: number };
     };
     const currentConnections = status.connections?.current ?? 0;
 
@@ -193,6 +194,63 @@ async function fetchViaDirectConnection(
         } catch {
           // Skip collection listing if unavailable
         }
+      }
+    }
+
+    // Resident memory
+    if (isPro && status.mem?.resident != null) {
+      metrics.push({
+        metricName: "memory_resident_mb",
+        currentValue: status.mem.resident,
+        limitValue: null,
+        percentUsed: null,
+      });
+    }
+
+    // Replication lag (via replSetGetStatus)
+    if (isPro) {
+      try {
+        const rsStatus = await adminDb.command({ replSetGetStatus: 1 }) as {
+          members?: Array<{ stateStr?: string; optimeDate?: Date }>;
+        };
+        const primary = rsStatus.members?.find((m) => m.stateStr === "PRIMARY");
+        const secondaries = rsStatus.members?.filter(
+          (m) => m.stateStr === "SECONDARY" && m.optimeDate
+        ) ?? [];
+        if (primary?.optimeDate && secondaries.length > 0) {
+          const maxLagMs = Math.max(
+            ...secondaries.map((s) =>
+              primary.optimeDate!.getTime() - (s.optimeDate?.getTime() ?? primary.optimeDate!.getTime())
+            )
+          );
+          metrics.push({
+            metricName: "replication_lag_s",
+            currentValue: Math.round(maxLagMs / 10) / 100,
+            limitValue: null,
+            percentUsed: null,
+          });
+        }
+      } catch {
+        // Standalone node or restricted cluster — skip silently
+      }
+    }
+
+    // Slow in-flight queries (active ops running > 1s)
+    if (isPro) {
+      try {
+        const currentOp = await adminDb.command({
+          currentOp: 1,
+          active: true,
+          secs_running: { $gt: 1 },
+        }) as { inprog?: unknown[] };
+        metrics.push({
+          metricName: "slow_queries_count",
+          currentValue: currentOp.inprog?.length ?? 0,
+          limitValue: null,
+          percentUsed: null,
+        });
+      } catch {
+        // M0 shared clusters and restricted configs don't support currentOp
       }
     }
 
@@ -433,7 +491,16 @@ async function fetchViaAdminAPI(
   const measurementNames = [
     "DB_DATA_SIZE_TOTAL",
     "CONNECTIONS",
-    ...(isPro ? ["NETWORK_BYTES_IN", "NETWORK_BYTES_OUT"] : []),
+    ...(isPro ? [
+      "NETWORK_BYTES_IN",
+      "NETWORK_BYTES_OUT",
+      "SYSTEM_CPU_PERCENT",
+      "MEMORY_RESIDENT",
+      "OP_EXECUTION_TIME_READS",
+      "OP_EXECUTION_TIME_WRITES",
+      "DISK_PARTITION_IOPS_READ",
+      "DISK_PARTITION_IOPS_WRITE",
+    ] : []),
   ];
 
   const GRAN_CONFIGS = [
@@ -538,6 +605,99 @@ async function fetchViaAdminAPI(
       limitValue: HOURLY_NET_LIMIT_MB,
       percentUsed: pct(netOutMBh, HOURLY_NET_LIMIT_MB),
     });
+  }
+
+  // CPU
+  const cpuRaw = latestValue(measurements, "SYSTEM_CPU_PERCENT");
+  if (cpuRaw !== null) {
+    const cpuPct = Math.round(cpuRaw * 100) / 100;
+    metrics.push({
+      metricName: "cpu_percent",
+      currentValue: cpuPct,
+      limitValue: 100,
+      percentUsed: pct(cpuPct, 100),
+    });
+  }
+
+  // Resident memory
+  const memRaw = latestValue(measurements, "MEMORY_RESIDENT");
+  if (memRaw !== null) {
+    metrics.push({
+      metricName: "memory_resident_mb",
+      currentValue: Math.round(memRaw * 100) / 100,
+      limitValue: null,
+      percentUsed: null,
+    });
+  }
+
+  // Average read latency
+  const readLat = latestValue(measurements, "OP_EXECUTION_TIME_READS");
+  if (readLat !== null) {
+    metrics.push({
+      metricName: "avg_read_latency_ms",
+      currentValue: Math.round(readLat * 100) / 100,
+      limitValue: null,
+      percentUsed: null,
+    });
+  }
+
+  // Average write latency
+  const writeLat = latestValue(measurements, "OP_EXECUTION_TIME_WRITES");
+  if (writeLat !== null) {
+    metrics.push({
+      metricName: "avg_write_latency_ms",
+      currentValue: Math.round(writeLat * 100) / 100,
+      limitValue: null,
+      percentUsed: null,
+    });
+  }
+
+  // Disk IOPS read
+  const iopsRead = latestValue(measurements, "DISK_PARTITION_IOPS_READ");
+  if (iopsRead !== null) {
+    metrics.push({
+      metricName: "disk_iops_read",
+      currentValue: Math.round(iopsRead * 100) / 100,
+      limitValue: null,
+      percentUsed: null,
+    });
+  }
+
+  // Disk IOPS write
+  const iopsWrite = latestValue(measurements, "DISK_PARTITION_IOPS_WRITE");
+  if (iopsWrite !== null) {
+    metrics.push({
+      metricName: "disk_iops_write",
+      currentValue: Math.round(iopsWrite * 100) / 100,
+      limitValue: null,
+      percentUsed: null,
+    });
+  }
+
+  // Replication lag — must query a secondary process (primary always returns 0)
+  const secondaryProcess = processes.find((p) => p.typeName === "REPLICA_SECONDARY");
+  if (secondaryProcess) {
+    try {
+      const lagRes = await digestFetch(
+        `${ATLAS_BASE}/groups/${projectId}/processes/${secondaryProcess.id}/measurements?granularity=PT1M&period=PT2H&m=REPLICATION_LAG`,
+        publicKey,
+        privateKey
+      );
+      if (lagRes.ok) {
+        const lagData = await lagRes.json() as { measurements: AtlasMeasurement[] };
+        const lagRaw = latestValue(lagData.measurements ?? [], "REPLICATION_LAG");
+        if (lagRaw !== null) {
+          metrics.push({
+            metricName: "replication_lag_s",
+            currentValue: Math.round(lagRaw * 100) / 100,
+            limitValue: null,
+            percentUsed: null,
+          });
+        }
+      }
+    } catch {
+      // Non-fatal — replication lag unavailable
+    }
   }
 
   // ── PRO: Per-cluster storage breakdown ────────────────────────────────────

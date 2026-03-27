@@ -7,10 +7,11 @@ export async function sendSlackAlert(
 ): Promise<void> {
   try {
     const metricLabel = METRIC_LABELS[alert.metricName] ?? alert.metricName;
+    const pct = alert.percentUsed ?? 0;
     const color =
-      alert.percentUsed >= 90
+      pct >= 90
         ? "#ef4444"
-        : alert.percentUsed >= 80
+        : pct >= 80
           ? "#eab308"
           : "#22c55e";
 
@@ -26,7 +27,7 @@ export async function sendSlackAlert(
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text: `*Usage Alert: ${alert.service} — ${metricLabel}*\n${alert.accountLabel} is at *${Math.round(alert.percentUsed)}%* of limit (${alert.currentValue.toLocaleString()} / ${alert.limitValue.toLocaleString()})`,
+                  text: `*Usage Alert: ${alert.service} — ${metricLabel}*\n${alert.accountLabel} is at *${Math.round(pct)}%* of limit (${alert.currentValue.toLocaleString()} / ${alert.limitValue?.toLocaleString() ?? "—"})`,
                 },
               },
             ],

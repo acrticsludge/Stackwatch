@@ -7,10 +7,11 @@ export async function sendDiscordAlert(
 ): Promise<void> {
   try {
     const metricLabel = METRIC_LABELS[alert.metricName] ?? alert.metricName;
+    const pct = alert.percentUsed ?? 0;
     const color =
-      alert.percentUsed >= 90
+      pct >= 90
         ? 0xef4444
-        : alert.percentUsed >= 80
+        : pct >= 80
           ? 0xeab308
           : 0x22c55e;
 
@@ -21,7 +22,7 @@ export async function sendDiscordAlert(
         embeds: [
           {
             title: `Usage Alert: ${alert.service} — ${metricLabel}`,
-            description: `**${alert.accountLabel}** is at **${Math.round(alert.percentUsed)}%** of limit`,
+            description: `**${alert.accountLabel}** is at **${Math.round(pct)}%** of limit`,
             color,
             fields: [
               {
@@ -31,7 +32,7 @@ export async function sendDiscordAlert(
               },
               {
                 name: "Limit",
-                value: alert.limitValue.toLocaleString(),
+                value: alert.limitValue?.toLocaleString() ?? "—",
                 inline: true,
               },
             ],

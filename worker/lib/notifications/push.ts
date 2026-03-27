@@ -14,7 +14,7 @@ export async function sendPushAlert(
 ): Promise<void> {
   const serviceLabel = SERVICE_LABELS[alert.service] ?? alert.service;
   const metricLabel = METRIC_LABELS[alert.metricName] ?? alert.metricName;
-  const pct = Math.round(alert.percentUsed);
+  const pct = Math.round(alert.percentUsed ?? 0);
 
   await webpush.sendNotification(
     pushSubscription,

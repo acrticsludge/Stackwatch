@@ -206,7 +206,14 @@ const PRO_METRICS: Record<string, string[]> = {
     "network_rx_mb",
     "disk_usage_mb",
   ],
-  mongodb: ["network_bytes_in_mb", "network_bytes_out_mb"],
+  mongodb: [
+    "network_bytes_in_mb",
+    "network_bytes_out_mb",
+    "cpu_percent",
+    "memory_resident_mb",
+    "replication_lag_s",
+    "slow_queries_count",
+  ],
 };
 
 export function SettingsContent({

@@ -120,6 +120,14 @@ export const METRIC_LABELS: Record<string, string> = {
   network_bytes_out_mb: "Network Out",
   // MongoDB Atlas — direct connection (entity-level, display only)
   collection_size_mb: "Collection Size",
+  // MongoDB Atlas — Pro performance metrics
+  memory_resident_mb: "Resident Memory",
+  avg_read_latency_ms: "Avg Read Latency",
+  avg_write_latency_ms: "Avg Write Latency",
+  disk_iops_read: "Disk Read IOPS",
+  disk_iops_write: "Disk Write IOPS",
+  replication_lag_s: "Replication Lag",
+  slow_queries_count: "Slow Queries",
 };
 
 export const METRIC_UNITS: Record<string, string> = {
@@ -168,4 +176,12 @@ export const METRIC_UNITS: Record<string, string> = {
   network_bytes_out_mb: "MB",
   // MongoDB Atlas — direct connection (entity-level, display only)
   collection_size_mb: "MB",
+  // MongoDB Atlas — Pro performance metrics
+  memory_resident_mb: "MB",
+  avg_read_latency_ms: "ms",
+  avg_write_latency_ms: "ms",
+  disk_iops_read: "IOPS",
+  disk_iops_write: "IOPS",
+  replication_lag_s: "s",
+  slow_queries_count: "",
 };

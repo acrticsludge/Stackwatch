@@ -12,13 +12,14 @@ export async function sendAlertEmail(
 ): Promise<void> {
   const metricLabel = METRIC_LABELS[alert.metricName] ?? alert.metricName;
   const unit = METRIC_UNITS[alert.metricName] ?? "";
-  const severity = alert.percentUsed >= 90 ? "critical" : "warning";
+  const pct = alert.percentUsed ?? 0;
+  const severity = pct >= 90 ? "critical" : "warning";
   const color = severity === "critical" ? "#ef4444" : "#eab308";
 
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `[${severity === "critical" ? "🔴 Critical" : "🟡 Warning"}] ${alert.service} ${metricLabel} at ${Math.round(alert.percentUsed)}%`,
+    subject: `[${severity === "critical" ? "🔴 Critical" : "🟡 Warning"}] ${alert.service} ${metricLabel} at ${Math.round(pct)}%`,
     html: `
 <!DOCTYPE html>
 <html>
@@ -31,7 +32,7 @@ export async function sendAlertEmail(
     </div>
     <div style="padding: 32px;">
       <p style="margin: 0 0 24px; color: #374151; font-size: 16px;">
-        <strong>${metricLabel}</strong> has reached <strong style="color: ${color};">${Math.round(alert.percentUsed)}%</strong> of your limit.
+        <strong>${metricLabel}</strong> has reached <strong style="color: ${color};">${Math.round(pct)}%</strong> of your limit.
       </p>
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
         <tr style="border-bottom: 1px solid #e5e7eb;">
@@ -40,7 +41,7 @@ export async function sendAlertEmail(
         </tr>
         <tr style="border-bottom: 1px solid #e5e7eb;">
           <td style="padding: 10px 0; color: #6b7280; font-size: 14px;">Limit</td>
-          <td style="padding: 10px 0; text-align: right; font-weight: 600; color: #111827; font-size: 14px;">${alert.limitValue.toLocaleString()} ${unit}</td>
+          <td style="padding: 10px 0; text-align: right; font-weight: 600; color: #111827; font-size: 14px;">${alert.limitValue?.toLocaleString() ?? "—"} ${unit}</td>
         </tr>
         <tr>
           <td style="padding: 10px 0; color: #6b7280; font-size: 14px;">Recorded at</td>

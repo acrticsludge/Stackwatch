@@ -226,12 +226,18 @@ function MetricRow({
 
 // ── MongoDB per-database/collection accordion ─────────────────────────────────
 
-function MongoDBDatabaseAccordion({ entitySnapshots }: { entitySnapshots: Snapshot[] }) {
+function MongoDBDatabaseAccordion({
+  entitySnapshots,
+  clusterName,
+}: {
+  entitySnapshots: Snapshot[];
+  clusterName: string;
+}) {
   const dbSnapshots = entitySnapshots.filter((e) => e.metric_name === "db_size_mb");
   const collSnapshots = entitySnapshots.filter((e) => e.metric_name === "collection_size_mb");
   const [expandedDbs, setExpandedDbs] = useState<Set<string>>(new Set());
 
-  if (dbSnapshots.length === 0) return null;
+  if (dbSnapshots.length === 0 && entitySnapshots.length === 0) return null;
 
   function toggle(dbName: string) {
     setExpandedDbs((prev) => {
@@ -243,7 +249,15 @@ function MongoDBDatabaseAccordion({ entitySnapshots }: { entitySnapshots: Snapsh
   }
 
   return (
-    <div className="mt-2">
+    <div className="mt-3">
+      {/* Cluster name header */}
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Cluster</span>
+        <span className="text-xs text-zinc-300 font-medium truncate">{clusterName}</span>
+      </div>
+
+      {dbSnapshots.length > 0 && (
+      <>
       <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-2">Databases</p>
       <div className="space-y-1">
         {dbSnapshots.map((db) => {
@@ -291,6 +305,8 @@ function MongoDBDatabaseAccordion({ entitySnapshots }: { entitySnapshots: Snapsh
           );
         })}
       </div>
+      </>
+      )}
     </div>
   );
 }
@@ -365,7 +381,12 @@ function UsageDetailModal({
                 </p>
               </div>
             )}
-          <MongoDBDatabaseAccordion entitySnapshots={entitySnapshots} />
+          {service === "mongodb" && (
+            <MongoDBDatabaseAccordion
+              entitySnapshots={entitySnapshots}
+              clusterName={accountLabel}
+            />
+          )}
         </div>
 
         {/* Footer */}

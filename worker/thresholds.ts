@@ -33,6 +33,7 @@ export async function checkThresholds(
     const config = configs.find((c) => c.metric_name === metric.metricName);
     if (!config) continue;
 
+    if (metric.percentUsed === null) continue; // informational metric — no threshold comparison
     if (metric.percentUsed < config.threshold_percent) continue;
 
     // Anti-spam: check if alert was already fired since the last time
