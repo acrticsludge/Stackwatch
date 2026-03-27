@@ -114,3 +114,4 @@ Full documentation for connecting each service is in the [Wiki](../../wiki):
 - [Connecting Vercel](../../wiki/Connecting-Vercel)
 - [Connecting Supabase](../../wiki/Connecting-Supabase)
 - [Connecting Railway](../../wiki/Connecting-Railway)
+- [Connecting MongoDB Atlas](../../wiki/Connecting-MongoDB-Atlas)
