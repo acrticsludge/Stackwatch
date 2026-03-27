@@ -82,7 +82,7 @@ function welcomeHtml(appUrl: string): string {
     <table style="width:100%;border-collapse:collapse;margin-bottom:28px;">
       ${row("1. Connect a service", "Add your API tokens on the Integrations page")}
       ${row("2. Set your threshold", "Default is 80% — change it in Settings")}
-      ${row("3. Get alerted", "Email alerts are on by default. Add Slack or Discord in Settings")}
+      ${row("3. Get alerted", "Email alerts are on by default. Slack &amp; Discord available on Pro")}
     </table>
     ${btn(`${appUrl}/integrations`, "#2563eb", "Connect your first service →")}
     <p style="margin:20px 0 0;color:#6b7280;font-size:13px;">
@@ -103,7 +103,7 @@ function firstIntegrationHtml(serviceLabel: string, wikiUrl: string, appUrl: str
     <table style="width:100%;border-collapse:collapse;margin-bottom:28px;">
       ${row("Poll interval", "Every 15 min (free) · 5 min (Pro)")}
       ${row("Alert threshold", "80% — adjust in Settings")}
-      ${row("Alert channels", "Email enabled · add Slack/Discord in Settings")}
+      ${row("Alert channels", "Email enabled · Slack &amp; Discord available on Pro")}
     </table>
     ${btn(`${appUrl}/dashboard`, "#059669", "View dashboard →")}
     <p style="margin:20px 0 0;color:#6b7280;font-size:13px;">

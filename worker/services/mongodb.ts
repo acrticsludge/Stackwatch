@@ -180,13 +180,17 @@ export async function fetchMongoDBUsage(
     return [];
   }
 
-  // Sort processes: prefer explicit REPLICA_PRIMARY, then nodes whose hostname
-  // ends with "-00" (Atlas typically assigns primary to the first replica member).
-  // This avoids accidentally querying a secondary that may 404 on measurements.
+  // Sort processes: explicit REPLICA_PRIMARY first, then by replica member number
+  // ascending. Atlas names members as "shard-XX-NN" where NN is the member index;
+  // member 00 is most likely the primary when typeName isn't populated.
+  const replicaMemberNum = (id: string): number => {
+    const m = id.match(/-(\d{2})\./);          // last "-NN." before the domain
+    return m ? parseInt(m[1], 10) : 99;
+  };
   const sortedProcesses = [...processes].sort((a, b) => {
-    const score = (p: typeof processes[0]) =>
-      p.typeName === "REPLICA_PRIMARY" ? 2 : p.id.includes("-00.") ? 1 : 0;
-    return score(b) - score(a);
+    if (a.typeName === "REPLICA_PRIMARY") return -1;
+    if (b.typeName === "REPLICA_PRIMARY") return 1;
+    return replicaMemberNum(a.id) - replicaMemberNum(b.id);
   });
   const aggregateProcess = sortedProcesses[0];
 
@@ -203,6 +207,7 @@ export async function fetchMongoDBUsage(
   ];
 
   const GRAN_CONFIGS = [
+    { granularity: "PT1M", period: "PT2H" },  // M0 only supports minute granularity
     { granularity: "PT1H", period: "PT2H" },
     { granularity: "P1D",  period: "P7D"  },
   ] as const;
@@ -235,8 +240,27 @@ export async function fetchMongoDBUsage(
   }
 
   if (!measurements) {
-    console.warn(`[mongodb] No measurements returned for project ${projectId} (integration ${integration.id})`);
-    return [];
+    // Atlas M0/M2/M5 free-tier clusters don't expose process measurements via the
+    // Admin API. Fall back to the known tier limits with currentValue = 0 so the
+    // dashboard at least shows the cluster is connected and what the limits are.
+    console.info(
+      `[mongodb] Process measurements unavailable for project ${projectId} ` +
+      `(M0/free-tier limitation). Returning tier limits only (integration ${integration.id}).`
+    );
+    return [
+      {
+        metricName: "storage_mb",
+        currentValue: 0,
+        limitValue: primaryLimits.storageMB,
+        percentUsed: 0,
+      },
+      {
+        metricName: "connections",
+        currentValue: 0,
+        limitValue: primaryLimits.connections,
+        percentUsed: 0,
+      },
+    ];
   }
 
   // ── FREE: Storage ────────────────────────────────────────────────────────

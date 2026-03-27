@@ -12,6 +12,7 @@ Each service requires an API key or token. Keys are encrypted before being store
 | Vercel | API Token | [Connecting Vercel](Connecting-Vercel) |
 | Supabase | Management API Key + Project Ref | [Connecting Supabase](Connecting-Supabase) |
 | Railway | API Token | [Connecting-Railway](Connecting-Railway) |
+| MongoDB Atlas | Atlas Public Key + Private Key + Project ID | [Connecting MongoDB Atlas](Connecting-MongoDB-Atlas) |
 
 ## Tracked Metrics by Tier
 
