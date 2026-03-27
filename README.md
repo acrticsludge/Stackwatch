@@ -22,6 +22,7 @@ Stackwatch monitors usage across your developer tools — GitHub Actions, Vercel
 | Vercel | Bandwidth, build minutes, function invocations, deployments, per-project breakdown |
 | Supabase | DB size, MAU, storage buckets, connections, realtime, edge functions |
 | Railway | Memory, CPU, network, disk, per-project breakdown |
+| MongoDB | Storage, Connections, Network In/Out, per-database breakdown |
 
 ## Stack
 
